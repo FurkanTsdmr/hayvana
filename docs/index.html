@@ -254,8 +254,6 @@
         gameData = data;
         gameStarted = data.gameStarted || false;
 
-        console.log('🔄 UI guncelleniyor, oyuncu sayisi:', Object.keys(data.players || {}).length);
-
         var players = data.players || {};
         var ids = Object.keys(players);
         var currentId = data.currentPlayerId || null;
@@ -269,9 +267,6 @@
         var passCount = data.passCount || 0;
         var totalPlayers = ids.length;
 
-        // ============================================================
-        // ⭐ OYUNCU LISTESI
-        // ============================================================
         var listEl = $('playerList');
         var listHtml = '';
         for (var i = 0; i < ids.length; i = i + 1) {
@@ -293,14 +288,10 @@
         listEl.innerHTML = listHtml;
         $('playerCount').textContent = ids.length;
 
-        // ============================================================
-        // ⭐ OYUN BASLATMA BUTONLARI - DÜZELTİLDİ!
-        // ============================================================
         var wMsg = $('waitingMsg');
         var setupBtns = document.querySelectorAll('.setup-btn');
         var resetBtn = $('resetBtn');
 
-        // Eğer oyun başlamadıysa ve 2'den az oyuncu varsa
         if (!gameStarted && ids.length < 2) {
             wMsg.style.display = 'block';
             wMsg.textContent = '⏳ Oyuncu bekleniyor... (' + ids.length + '/2)';
@@ -308,22 +299,16 @@
                 setupBtns[j].disabled = true;
             }
             resetBtn.disabled = true;
-        } 
-        // Eğer oyun başlamadıysa ve 2 veya daha fazla oyuncu varsa
-        else if (!gameStarted && ids.length >= 2) {
+        } else if (!gameStarted && ids.length >= 2) {
             wMsg.style.display = 'none';
             for (var k = 0; k < setupBtns.length; k = k + 1) {
                 setupBtns[k].disabled = !isHost;
             }
             resetBtn.disabled = !isHost;
-            
-            // Ev sahibine mesaj
             if (isHost) {
-                log('✅ ' + ids.length + ' oyuncu hazir! "2 Kişi" butonuna tikla.');
+                log('✅ ' + ids.length + ' oyuncu hazir! "2 Kisi" butonuna tikla.');
             }
-        } 
-        // Oyun başladıysa
-        else {
+        } else {
             wMsg.style.display = 'none';
             for (var l = 0; l < setupBtns.length; l = l + 1) {
                 setupBtns[l].disabled = true;
@@ -331,9 +316,6 @@
             resetBtn.disabled = !isHost;
         }
 
-        // ============================================================
-        // OYUN BUTONLARI
-        // ============================================================
         var isMyTurn = (currentId === myId);
         var myPlayer = players[myId];
         var finished = myPlayer ? myPlayer.finished : false;
@@ -346,7 +328,6 @@
         $('passBtn').disabled = !canPass;
         $('spinBtn').disabled = !canSpin;
 
-        // Hayvan
         if (animal) {
             $('animalEmoji').textContent = animal.emoji;
             $('animalName').textContent = animal.name;
@@ -357,7 +338,6 @@
             $('animalPower').textContent = '?';
         }
 
-        // Sira ve teklif
         var currentPlayer = players[currentId];
         $('turnIndicator').textContent = currentPlayer ? currentPlayer.name : '-';
         $('highestBid').textContent = bid + '$';
@@ -477,9 +457,6 @@
         listenRoom(code);
     }
 
-    // ================================================================
-    // ⭐ DÜZELTİLMİŞ joinRoom() - Oyuncu doğru ekleniyor!
-    // ================================================================
     function joinRoom() {
         console.log('Odaya katilinior...');
         var code = $('roomInput').value.toUpperCase().trim();
@@ -510,7 +487,6 @@
                 return;
             }
 
-            // ⭐ DOĞRU GÜNCELLEME - players/ID şeklinde!
             var updates = {};
             var newPlayerKey = 'players/' + myId;
             updates[newPlayerKey] = {
@@ -917,6 +893,9 @@
         });
     }
 
+    // ================================================================
+    // ⭐ OYUN BİTTİ Mİ KONTROL ET + NORMAL ALIM (DÜZELTİLDİ!)
+    // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
             var data = snap.val();
@@ -925,6 +904,7 @@
             var players = data.players || {};
             var ids = Object.keys(players);
             
+            // Oyun bitiş kontrolü
             var allDone = true;
             var allFull = true;
             for (var i = 0; i < ids.length; i = i + 1) {
@@ -960,15 +940,20 @@
                 return;
             }
             
+            // ============================================================
+            // ⭐ NORMAL ALIM: En yüksek teklifi veren hayvanı ALIR!
+            // ============================================================
             if (data.turnPhase === 'bidding' && data.currentAnimal) {
                 var highestBidderId = data.highestBidder;
                 var highestBid = data.highestBid || 0;
                 
+                // Eğer en yüksek teklif 0'dan büyükse ve bir kazanan varsa
                 if (highestBidderId && highestBid > 0) {
                     var winner2 = data.players[highestBidderId];
                     var animal2 = data.currentAnimal;
                     
                     if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
+                        // ✅ DOĞRU: Kazanan teklif ettiği kadar öder!
                         winner2.budget = winner2.budget - highestBid;
                         winner2.crew = winner2.crew || [];
                         var newAnimal2 = {
@@ -989,6 +974,7 @@
                         updates8.highestBid = 0;
                         updates8.highestBidder = null;
                         
+                        // Sırayı bir sonraki oyuncuya ver
                         var ids8 = Object.keys(data.players);
                         var idx8 = ids8.indexOf(highestBidderId);
                         var nextId8 = null;
