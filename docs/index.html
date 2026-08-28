@@ -125,7 +125,6 @@
                     <div class="animal-power">⚡ Güç: <span id="animalPower">?</span></div>
                 </div>
                 
-                <!-- Zorunlu alım uyarısı -->
                 <div id="forcedWarning" class="forced-warning">
                     ⚠️ Herkes pas geçti! Hayvan zorunlu alınacak!
                 </div>
@@ -521,7 +520,7 @@
     }
 
     // ================================================================
-    // ⭐ ÇARKI ÇEVİR (Hayvanı çeviren kişiyi kaydediyoruz)
+    // ⭐ ÇARKI ÇEVİR
     // ================================================================
     function spinAnimal() {
         if (!gameStarted) {
@@ -556,7 +555,7 @@
             const animal = randomAnimal();
             const updates = {
                 currentAnimal: animal,
-                spinnerId: myId,  // 👈 Hayvanı çeviren kişiyi kaydediyoruz!
+                spinnerId: myId,
                 highestBid: 0,
                 highestBidder: null,
                 turnPhase: 'bidding',
@@ -591,7 +590,6 @@
             const player = data.players[myId];
             if (!player || player.finished) return;
             
-            // Pas geçmiş mi kontrol et
             if (data.passedPlayers && data.passedPlayers.includes(myId)) {
                 log('⛔ Zaten pas geçtin!');
                 return;
@@ -599,7 +597,6 @@
             
             if (player.budget < 1) {
                 log('❌ Bütçen yok! Otomatik pas geçiyorsun.');
-                // Otomatik pas
                 let updates = {};
                 const passedPlayers = data.passedPlayers || [];
                 if (!passedPlayers.includes(myId)) {
@@ -608,7 +605,6 @@
                     updates.passCount = (data.passCount || 0) + 1;
                     log(player.name + ' ⛔ otomatik pas geçti (bütçe yok).');
                 }
-                // Sırayı geç
                 const ids = Object.keys(data.players);
                 let idx = ids.indexOf(myId);
                 let nextId = null;
@@ -623,7 +619,6 @@
                 return;
             }
 
-            // Yeni teklif: en yüksek teklifin +1$'ı
             const newBid = (data.highestBid || 0) + 1;
             if (newBid > player.budget) {
                 log('❌ Bütçen ' + player.budget + '$, ' + newBid + '$ yetmiyor!');
@@ -635,7 +630,6 @@
                 highestBidder: myId
             };
 
-            // Sırayı bir sonraki aktif oyuncuya geçir (pas geçmeyen)
             const ids = Object.keys(data.players);
             const passedPlayers = data.passedPlayers || [];
             let idx = ids.indexOf(myId);
@@ -652,7 +646,6 @@
                 updates.currentPlayerId = nextId;
                 log(player.name + ' ➡️ ' + newBid + '$ verdi. Sıra ' + data.players[nextId].name + '\'de.');
             } else {
-                // Herkes pas geçtiyse veya tek kişi kaldıysa
                 log(player.name + ' ➡️ ' + newBid + '$ verdi!');
             }
 
@@ -661,7 +654,7 @@
     }
 
     // ================================================================
-    // ⭐ PAS GEÇ
+    // ⭐ PAS GEÇ + ZORUNLU ALIM (DÜZELTİLDİ!)
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -682,15 +675,12 @@
             const player = data.players[myId];
             if (!player || player.finished) return;
             
-            // Zaten pas geçmiş mi?
             if (data.passedPlayers && data.passedPlayers.includes(myId)) {
                 log('⛔ Zaten pas geçtin!');
                 return;
             }
 
             let updates = {};
-            
-            // Pas geçenleri listeye ekle
             const passedPlayers = data.passedPlayers || [];
             passedPlayers.push(myId);
             updates.passedPlayers = passedPlayers;
@@ -698,7 +688,6 @@
             const passCount = (data.passCount || 0) + 1;
             updates.passCount = passCount;
             
-            // En yüksek teklifi veren pas geçiyorsa sıfırla
             if (data.highestBidder === myId) {
                 updates.highestBid = 0;
                 updates.highestBidder = null;
@@ -709,15 +698,16 @@
 
             const totalPlayers = Object.keys(data.players).length;
             
-            // HERKES PAS GEÇTİ Mİ?
+            // ============================================================
+            // ⭐ HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
+            // ============================================================
             if (passCount >= totalPlayers) {
-                // ZORUNLU ALIM! Hayvanı çeviren kişi alır.
                 const spinnerId = data.spinnerId;
                 const spinner = data.players[spinnerId];
+                const animal = data.currentAnimal;
                 
                 if (spinner && spinner.budget >= 1 && !spinner.finished) {
-                    // Çeviren kişi 1$ ödeyerek alır
-                    const animal = data.currentAnimal;
+                    // ✅ ZORUNLU ALIM: Spinner 1$ öder
                     spinner.budget -= 1;
                     spinner.crew = spinner.crew || [];
                     spinner.crew.push({ ...animal });
@@ -744,19 +734,15 @@
                     if (nextId) updates.currentPlayerId = nextId;
                     
                     roomRef.update(updates);
-                    
-                    // Oyun bitti mi kontrol et
                     setTimeout(() => checkGameOver(roomRef), 300);
                     return;
                 } else {
-                    // Çeviren kişi alamıyor (bütçe yok veya kadrosu dolu)
                     log('⚠️ ' + (spinner?.name || 'Çeviren kişi') + ' 1$ bütçesi yok veya kadrosu dolu! Hayvan elden gitti.');
                     updates.currentAnimal = null;
                     updates.turnPhase = 'finished';
                     updates.passCount = 0;
                     updates.passedPlayers = [];
                     
-                    // Sırayı bir sonraki oyuncuya ver
                     const ids = Object.keys(data.players);
                     let idx = ids.indexOf(myId);
                     let nextId = null;
@@ -772,7 +758,7 @@
                 }
             }
 
-            // Sırayı bir sonraki aktif oyuncuya geçir (pas geçmeyen)
+            // Sırayı bir sonraki aktif oyuncuya geçir
             const ids = Object.keys(data.players);
             let idx = ids.indexOf(myId);
             let nextId = null;
@@ -784,7 +770,6 @@
                 }
             }
             
-            // En yüksek teklifi veren varsa ve pas geçmediyse sırayı ona ver
             if (data.highestBidder && data.players[data.highestBidder] && 
                 !data.players[data.highestBidder].finished && 
                 !passedPlayers.includes(data.highestBidder)) {
@@ -795,25 +780,26 @@
                 updates.currentPlayerId = nextId;
                 log('⏳ Sıra ' + data.players[nextId].name + '\'de.');
             } else {
-                // Hiç aktif oyuncu kalmadıysa zorunlu alım yap
-                // Bu durumda spinner alır
+                // Hiç aktif oyuncu kalmadıysa spinner zorunlu alır
                 const spinnerId = data.spinnerId;
                 const spinner = data.players[spinnerId];
+                const animal = data.currentAnimal;
+                
                 if (spinner && spinner.budget >= 1 && !spinner.finished) {
-                    const animal = data.currentAnimal;
                     spinner.budget -= 1;
                     spinner.crew = spinner.crew || [];
                     spinner.crew.push({ ...animal });
                     spinner.totalPower = (spinner.totalPower || 0) + animal.power;
                     if (spinner.crew.length >= 5) spinner.finished = true;
+                    
                     updates['players/' + spinnerId] = spinner;
                     updates.currentAnimal = null;
                     updates.turnPhase = 'finished';
                     updates.passCount = 0;
                     updates.passedPlayers = [];
+                    
                     log('🚨 ZORUNLU ALIM! ' + spinner.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$ ödeyerek aldı!');
                     
-                    // Sırayı bir sonraki oyuncuya ver
                     const ids2 = Object.keys(data.players);
                     let idx2 = ids2.indexOf(spinnerId);
                     let nextId2 = null;
@@ -822,6 +808,7 @@
                         if (!data.players[ni]?.finished) { nextId2 = ni; break; }
                     }
                     if (nextId2) updates.currentPlayerId = nextId2;
+                    
                     roomRef.update(updates);
                     setTimeout(() => checkGameOver(roomRef), 300);
                     return;
@@ -842,18 +829,18 @@
     }
 
     // ================================================================
-    // OYUN BİTTİ Mİ KONTROL ET
+    // ⭐ OYUN BİTTİ Mİ KONTROL ET + NORMAL ALIM (DÜZELTİLDİ!)
     // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', (snap) => {
             const data = snap.val();
-            if (!data) return;
+            if (!data || data.gameOver) return;
+            
             const players = data.players || {};
             const ids = Object.keys(players);
             
-            // Tüm oyuncular bitti mi veya bütçesi bitti mi?
+            // Oyun bitiş kontrolü
             const allDone = ids.every(id => players[id].finished || players[id].budget < 1);
-            // Tüm oyuncuların kadrosu 5 oldu mu?
             const allFull = ids.every(id => (players[id].crew || []).length >= 5);
             
             if (allDone || allFull) {
@@ -871,6 +858,89 @@
                     turnPhase: 'finished'
                 });
                 log('🏆 OYUN BİTTİ! Kazanan: ' + (players[winId]?.name || '?') + ' (⚡' + maxP + ')');
+                return;
+            }
+            
+            // ============================================================
+            // ⭐ NORMAL ALIM: En yüksek teklifi veren hayvanı ALIR!
+            // ============================================================
+            // Eğer turnPhase 'finished' değilse ve currentAnimal varsa
+            // ve herkes pas geçmediyse, en yüksek teklifi veren alır
+            if (data.turnPhase === 'bidding' && data.currentAnimal) {
+                const highestBidderId = data.highestBidder;
+                const highestBid = data.highestBid || 0;
+                
+                // Eğer en yüksek teklif 0'dan büyükse ve bir kazanan varsa
+                if (highestBidderId && highestBid > 0) {
+                    const winner = data.players[highestBidderId];
+                    const animal = data.currentAnimal;
+                    
+                    if (winner && !winner.finished && winner.budget >= highestBid) {
+                        // ✅ NORMAL ALIM: Kazanan teklif ettiği kadar öder
+                        winner.budget -= highestBid;
+                        winner.crew = winner.crew || [];
+                        winner.crew.push({ ...animal });
+                        winner.totalPower = (winner.totalPower || 0) + animal.power;
+                        if (winner.crew.length >= 5) winner.finished = true;
+                        
+                        const updates = {
+                            'players/' + highestBidderId: winner,
+                            currentAnimal: null,
+                            turnPhase: 'finished',
+                            passCount: 0,
+                            passedPlayers: [],
+                            highestBid: 0,
+                            highestBidder: null
+                        };
+                        
+                        // Sırayı bir sonraki oyuncuya ver
+                        const ids2 = Object.keys(data.players);
+                        let idx2 = ids2.indexOf(highestBidderId);
+                        let nextId = null;
+                        for (let i = 1; i <= ids2.length; i++) {
+                            const ni = ids2[(idx2 + i) % ids2.length];
+                            if (!data.players[ni]?.finished) { nextId = ni; break; }
+                        }
+                        if (nextId) updates.currentPlayerId = nextId;
+                        
+                        roomRef.update(updates);
+                        log('🏅 ' + winner.name + ' ' + animal.emoji + ' ' + animal.name + ' ' + highestBid + '$ ödeyerek kazandı!');
+                        log('📦 ' + winner.name + ' kadrosu: ' + winner.crew.length + '/5');
+                        
+                        setTimeout(() => checkGameOver(roomRef), 300);
+                        return;
+                    }
+                }
+            }
+            
+            // Eğer turnPhase 'finished' ise ve currentAnimal varsa, zorunlu alım kontrolü
+            if (data.turnPhase === 'finished' && data.currentAnimal) {
+                const spinnerId = data.spinnerId;
+                const spinner = data.players[spinnerId];
+                const animal = data.currentAnimal;
+                
+                if (spinner && spinner.budget >= 1 && !spinner.finished) {
+                    spinner.budget -= 1;
+                    spinner.crew = spinner.crew || [];
+                    spinner.crew.push({ ...animal });
+                    spinner.totalPower = (spinner.totalPower || 0) + animal.power;
+                    if (spinner.crew.length >= 5) spinner.finished = true;
+                    
+                    const updates = {
+                        'players/' + spinnerId: spinner,
+                        currentAnimal: null,
+                        turnPhase: 'finished',
+                        passCount: 0,
+                        passedPlayers: [],
+                        highestBid: 0,
+                        highestBidder: null
+                    };
+                    
+                    roomRef.update(updates);
+                    log('🚨 ZORUNLU ALIM (otomatik)! ' + spinner.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$ ödeyerek aldı!');
+                    setTimeout(() => checkGameOver(roomRef), 300);
+                    return;
+                }
             }
         });
     }
