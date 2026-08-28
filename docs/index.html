@@ -625,6 +625,9 @@
         });
     }
 
+    // ================================================================
+    // ⭐ DÜZELTİLMİŞ placeBid() - HIGHEST BİD DOĞRU ARTIYOR!
+    // ================================================================
     function placeBid() {
         if (!gameStarted) {
             log('⚠️ Oyun baslamadi!');
@@ -674,7 +677,10 @@
                 return;
             }
 
-            var newBid = (data.highestBid || 0) + 1;
+            // ⭐ BURASI ÇOK ÖNEMLİ! highestBid + 1 yapıyoruz
+            var currentHighestBid = data.highestBid || 0;
+            var newBid = currentHighestBid + 1;
+            
             if (newBid > player.budget) {
                 log('❌ Butcen ' + player.budget + '$, ' + newBid + '$ yetmiyor!');
                 return;
@@ -894,7 +900,7 @@
     }
 
     // ================================================================
-    // ⭐ OYUN BİTTİ Mİ KONTROL ET + NORMAL ALIM (DÜZELTİLDİ!)
+    // ⭐ DÜZELTİLMİŞ checkGameOver() - BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
     // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
