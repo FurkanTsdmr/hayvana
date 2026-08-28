@@ -154,9 +154,9 @@
 
 <script>
     // ================================================================
-    // 🔥 FIREBASE KONFİGÜRASYONU
+    // FIREBASE KONFIGURASYONU
     // ================================================================
-    const firebaseConfig = {
+    var firebaseConfig = {
         apiKey: "AIzaSyDPB_kxCOm5FzjNfhJiJliIBg_kRTLJzbQ",
         authDomain: "furkan-portfolio.firebaseapp.com",
         databaseURL: "https://hayvan-19016-default-rtdb.firebaseio.com",
@@ -168,24 +168,24 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    var db = firebase.database();
 
     // ================================================================
     // HAYVANLAR
     // ================================================================
-    const ANIMALS = [
+    var ANIMALS = [
         { name: "Fare", emoji: "🐭", power: 2 },
         { name: "Sincap", emoji: "🐿️", power: 3 },
-        { name: "Tavşan", emoji: "🐇", power: 4 },
-        { name: "Köpek", emoji: "🐕", power: 5 },
+        { name: "Tavsan", emoji: "🐇", power: 4 },
+        { name: "Kopek", emoji: "🐕", power: 5 },
         { name: "Kurt", emoji: "🐺", power: 7 },
         { name: "Leopar", emoji: "🐆", power: 8 },
         { name: "Kaplan", emoji: "🐅", power: 9 },
         { name: "Aslan", emoji: "🦁", power: 10 },
-        { name: "Ayı", emoji: "🐻", power: 10 },
+        { name: "Ayi", emoji: "🐻", power: 10 },
         { name: "Goril", emoji: "🦍", power: 11 },
         { name: "Fil", emoji: "🐘", power: 12 },
-        { name: "Su Aygırı", emoji: "🦛", power: 13 },
+        { name: "Su Aygyr", emoji: "🦛", power: 13 },
         { name: "Gergedan", emoji: "🦏", power: 14 },
         { name: "Timsah", emoji: "🐊", power: 15 },
         { name: "Kartal", emoji: "🦅", power: 16 },
@@ -193,21 +193,22 @@
         { name: "Dinozor", emoji: "🦕", power: 22 },
         { name: "Mamut", emoji: "🦣", power: 24 },
         { name: "Dev Ahtapot", emoji: "🐙", power: 26 },
-        { name: "Deniz Canavarı", emoji: "🐲", power: 30 }
+        { name: "Deniz Canavari", emoji: "🐲", power: 30 }
     ];
 
     function randomAnimal() {
-        return ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+        var index = Math.floor(Math.random() * ANIMALS.length);
+        return ANIMALS[index];
     }
 
     // ================================================================
     // OYUN DURUMU
     // ================================================================
-    let myId = null;
-    let myRoom = null;
-    let isHost = false;
-    let gameStarted = false;
-    let gameData = null;
+    var myId = null;
+    var myRoom = null;
+    var isHost = false;
+    var gameStarted = false;
+    var gameData = null;
 
     // ================================================================
     // DOM
@@ -216,11 +217,11 @@
         return document.getElementById(id);
     }
 
-    const logEl = $('logArea');
+    var logEl = $('logArea');
 
     function log(msg) {
-        console.log('📝', msg);
-        const d = document.createElement('div');
+        console.log(msg);
+        var d = document.createElement('div');
         d.textContent = msg;
         logEl.prepend(d);
         if (logEl.children.length > 30) {
@@ -231,18 +232,26 @@
     function generateCode() {
         var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var code = '';
-        for (var i = 0; i < 4; i++) {
-            code += chars[Math.floor(Math.random() * 26)];
+        for (var i = 0; i < 4; i = i + 1) {
+            code = code + chars[Math.floor(Math.random() * 26)];
         }
         return code;
     }
 
+    function arrayIncludes(arr, item) {
+        if (!arr) return false;
+        for (var i = 0; i < arr.length; i = i + 1) {
+            if (arr[i] === item) return true;
+        }
+        return false;
+    }
+
     // ================================================================
-    // UI GÜNCELLEME
+    // UI GUNCELLEME
     // ================================================================
     function updateUI(data) {
         if (!data) {
-            console.warn('⚠️ Veri yok!');
+            console.warn('Veri yok!');
             return;
         }
         gameData = data;
@@ -264,26 +273,26 @@
         // Oyuncu listesi
         var listEl = $('playerList');
         var listHtml = '';
-        for (var i = 0; i < ids.length; i++) {
+        for (var i = 0; i < ids.length; i = i + 1) {
             var id = ids[i];
             var p = players[id];
             var isMe = (id === myId);
-            var passed = data.passedPlayers && data.passedPlayers.includes(id);
+            var passed = arrayIncludes(data.passedPlayers, id);
             var style = 'background:#1a2e1f;padding:2px 10px;border-radius:15px;margin:2px;display:inline-block;';
             if (passed) {
-                style += 'opacity:0.4;';
+                style = style + 'opacity:0.4;';
             }
-            listHtml += '<span style="' + style + '">';
-            listHtml += (p ? p.name : id) || id;
-            if (p && p.isHost) listHtml += ' ⭐';
-            if (isMe) listHtml += ' 👤';
-            if (passed) listHtml += ' ⛔';
-            listHtml += '</span>';
+            listHtml = listHtml + '<span style="' + style + '">';
+            listHtml = listHtml + (p ? p.name : id);
+            if (p && p.isHost) listHtml = listHtml + ' ⭐';
+            if (isMe) listHtml = listHtml + ' 👤';
+            if (passed) listHtml = listHtml + ' ⛔';
+            listHtml = listHtml + '</span>';
         }
         listEl.innerHTML = listHtml;
         $('playerCount').textContent = ids.length;
 
-        // Bekleme mesajı
+        // Bekleme mesaji
         var wMsg = $('waitingMsg');
         var setupBtns = document.querySelectorAll('.setup-btn');
         var resetBtn = $('resetBtn');
@@ -291,19 +300,19 @@
         if (!gameStarted && ids.length < 2) {
             wMsg.style.display = 'block';
             wMsg.textContent = '⏳ Oyuncu bekleniyor... (' + ids.length + '/2)';
-            for (var j = 0; j < setupBtns.length; j++) {
+            for (var j = 0; j < setupBtns.length; j = j + 1) {
                 setupBtns[j].disabled = true;
             }
             resetBtn.disabled = true;
         } else if (!gameStarted && ids.length >= 2) {
             wMsg.style.display = 'none';
-            for (var k = 0; k < setupBtns.length; k++) {
+            for (var k = 0; k < setupBtns.length; k = k + 1) {
                 setupBtns[k].disabled = !isHost;
             }
             resetBtn.disabled = !isHost;
         } else {
             wMsg.style.display = 'none';
-            for (var l = 0; l < setupBtns.length; l++) {
+            for (var l = 0; l < setupBtns.length; l = l + 1) {
                 setupBtns[l].disabled = true;
             }
             resetBtn.disabled = !isHost;
@@ -313,7 +322,7 @@
         var isMyTurn = (currentId === myId);
         var myPlayer = players[myId];
         var finished = myPlayer ? myPlayer.finished : false;
-        var hasPassed = data.passedPlayers && data.passedPlayers.includes(myId);
+        var hasPassed = arrayIncludes(data.passedPlayers, myId);
         var canBid = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over && !hasPassed;
         var canPass = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over && !hasPassed;
         var canSpin = gameStarted && (phase === 'idle' || phase === 'finished') && isMyTurn && !finished && !over;
@@ -333,19 +342,19 @@
             $('animalPower').textContent = '?';
         }
 
-        // Sıra ve teklif
+        // Sira ve teklif
         var currentPlayer = players[currentId];
         $('turnIndicator').textContent = currentPlayer ? currentPlayer.name : '-';
         $('highestBid').textContent = bid + '$';
         var bidderPlayer = bidder !== null ? (players[bidder] ? players[bidder].name : '-') : '-';
         $('highestBidder').textContent = bidderPlayer;
         
-        // Çeviren ve pas bilgisi
+        // Ceviren ve pas bilgisi
         var spinnerPlayer = spinnerId ? (players[spinnerId] ? players[spinnerId].name : '-') : '-';
         $('spinnerInfo').textContent = spinnerPlayer;
         $('passInfo').textContent = passCount + '/' + totalPlayers;
 
-        // Zorunlu alım uyarısı
+        // Zorunlu alim uyarisi
         var forcedWarning = $('forcedWarning');
         if (phase === 'finished' && animal && passCount >= totalPlayers) {
             forcedWarning.style.display = 'block';
@@ -364,14 +373,14 @@
             $('winnerBanner').style.display = 'none';
         }
 
-        // Oyuncu kartları
+        // Oyuncu kartlari
         var cardsEl = $('playerCards');
         cardsEl.innerHTML = '';
         if (ids.length === 0) {
-            cardsEl.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">Henüz oyuncu yok</div>';
+            cardsEl.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">Henuz oyuncu yok</div>';
             return;
         }
-        for (var m = 0; m < ids.length; m++) {
+        for (var m = 0; m < ids.length; m = m + 1) {
             var pid = ids[m];
             var p = players[pid];
             if (!p) continue;
@@ -381,17 +390,17 @@
             if (p.finished) card.classList.add('finished');
             if (pid === myId) card.classList.add('you');
             
-            var passed2 = data.passedPlayers && data.passedPlayers.includes(pid);
+            var passed2 = arrayIncludes(data.passedPlayers, pid);
             if (passed2) card.style.opacity = '0.4';
 
             var crew = p.crew || [];
             var crewHtml = '';
             if (crew.length > 0) {
-                for (var n = 0; n < crew.length; n++) {
-                    crewHtml += '<span>' + crew[n].emoji + crew[n].name + '(' + crew[n].power + ')</span> ';
+                for (var n = 0; n < crew.length; n = n + 1) {
+                    crewHtml = crewHtml + '<span>' + crew[n].emoji + crew[n].name + '(' + crew[n].power + ')</span> ';
                 }
             } else {
-                crewHtml = '<span style="opacity:0.4;">Boş</span>';
+                crewHtml = '<span style="opacity:0.4;">Bos</span>';
             }
 
             card.innerHTML = 
@@ -410,14 +419,14 @@
     }
 
     // ================================================================
-    // FIREBASE İŞLEMLERİ
+    // FIREBASE ISLEMLERI
     // ================================================================
     function getRoomRef() {
         return db.ref('rooms/' + myRoom);
     }
 
     function createRoom() {
-        console.log('✨ Oda oluşturuluyor...');
+        console.log('Oda olusturuluyor...');
         var code = generateCode();
         myRoom = code;
         isHost = true;
@@ -451,14 +460,14 @@
             passedPlayers: []
         });
 
-        log('✅ Oda oluşturuldu! Kod: ' + code);
-        log('📋 Arkadaşlarına bu kodu ver.');
-        $('syncStatus').textContent = '✅ Oda hazır';
+        log('✅ Oda olusturuldu! Kod: ' + code);
+        log('📋 Arkadaslarina bu kodu ver.');
+        $('syncStatus').textContent = '✅ Oda hazir';
         listenRoom(code);
     }
 
     function joinRoom() {
-        console.log('🔗 Odaya katılınıyor...');
+        console.log('Odaya katilinior...');
         var code = $('roomInput').value.toUpperCase().trim();
         if (!code || code.length !== 4) {
             log('❌ 4 harfli kod girin!');
@@ -472,17 +481,17 @@
         roomRef.once('value', function(snap) {
             var data = snap.val();
             if (!data) {
-                log('❌ Oda bulunamadı!');
+                log('❌ Oda bulunamadi!');
                 return;
             }
             var players = data.players || {};
             var count = Object.keys(players).length;
             if (count >= 4) {
-                log('❌ Oda dolu! (Maks 4 kişi)');
+                log('❌ Oda dolu! (Maks 4 kisi)');
                 return;
             }
             if (players[myId]) {
-                log('ℹ️ Zaten bu odadasın!');
+                log('ℹ️ Zaten bu odadasin!');
                 listenRoom(code);
                 return;
             }
@@ -501,8 +510,8 @@
             updates['playerCount'] = count + 1;
 
             roomRef.update(updates);
-            log('✅ Odaya katıldın! (' + (count + 1) + '/4)');
-            $('syncStatus').textContent = '✅ Bağlandı';
+            log('✅ Odaya katildin! (' + (count + 1) + '/4)');
+            $('syncStatus').textContent = '✅ Baglandi';
             listenRoom(code);
         });
     }
@@ -512,7 +521,7 @@
         roomRef.on('value', function(snap) {
             var data = snap.val();
             if (!data) {
-                log('❌ Oda silinmiş veya bulunamadı.');
+                log('❌ Oda silinmis veya bulunamadi.');
                 return;
             }
             gameStarted = data.gameStarted || false;
@@ -520,16 +529,16 @@
                 isHost = data.players[myId].isHost || false;
             }
             updateUI(data);
-            $('syncStatus').textContent = '✅ Gerçek zamanlı';
+            $('syncStatus').textContent = '✅ Gercek zamanli';
         });
     }
 
     // ================================================================
-    // OYUN HAMLELERİ
+    // OYUN HAMLELERI
     // ================================================================
     function startGame(count) {
         if (!isHost) {
-            log('⚠️ Sadece ev sahibi başlatabilir!');
+            log('⚠️ Sadece ev sahibi baslatabilir!');
             return;
         }
         var roomRef = getRoomRef();
@@ -543,9 +552,9 @@
                 return;
             }
 
-            var names = ['🦊 Aslan', '🐺 Kurt', '🦅 Şahin', '🐉 Ejder'];
+            var names = ['🦊 Aslan', '🐺 Kurt', '🦅 Sahin', '🐉 Ejder'];
             var updates = {};
-            for (var i = 0; i < ids.length; i++) {
+            for (var i = 0; i < ids.length; i = i + 1) {
                 var id = ids[i];
                 updates['players/' + id + '/name'] = names[i % names.length] + (i + 1);
                 updates['players/' + id + '/budget'] = 15;
@@ -566,14 +575,14 @@
             updates['passedPlayers'] = [];
 
             roomRef.update(updates);
-            log('🎮 Oyun başladı! ' + ids.length + ' kişi.');
-            log('🔄 "Çarkı Çevir" ile hayvan getirin!');
+            log('🎮 Oyun basladi! ' + ids.length + ' kisi.');
+            log('🔄 "Carki Cevir" ile hayvan getirin!');
         });
     }
 
     function spinAnimal() {
         if (!gameStarted) {
-            log('⚠️ Oyun başlamadı!');
+            log('⚠️ Oyun baslamadi!');
             return;
         }
         var roomRef = getRoomRef();
@@ -581,19 +590,19 @@
             var data = snap.val();
             if (!data || data.gameOver) return;
             if (data.turnPhase !== 'idle' && data.turnPhase !== 'finished') {
-                log('⚠️ Önce bu hayvanı sonuçlandırın!');
+                log('⚠️ Once bu hayvani sonuclandirin!');
                 return;
             }
             if (data.currentPlayerId !== myId) {
-                log('⏳ Sıra sende değil!');
+                log('⏳ Sira sende degil!');
                 return;
             }
             if (data.players[myId] && data.players[myId].finished) {
-                log('❌ Kadron dolu! Sıra geçiyor...');
+                log('❌ Kadron dolu! Sira geciyor...');
                 var ids = Object.keys(data.players);
                 var idx = ids.indexOf(myId);
                 var nextId = null;
-                for (var i = 1; i <= ids.length; i++) {
+                for (var i = 1; i <= ids.length; i = i + 1) {
                     var ni = ids[(idx + i) % ids.length];
                     if (!data.players[ni] || !data.players[ni].finished) {
                         nextId = ni;
@@ -616,14 +625,14 @@
             };
             roomRef.update(updates);
             var playerName = data.players[myId] ? data.players[myId].name : 'Oyuncu';
-            log('🎲 ' + animal.emoji + ' ' + animal.name + ' (⚡' + animal.power + ') çıktı!');
-            log('💡 ' + playerName + ' 1$ teklif verebilir veya pas geçebilir.');
+            log('🎲 ' + animal.emoji + ' ' + animal.name + ' (⚡' + animal.power + ') cikti!');
+            log('💡 ' + playerName + ' 1$ teklif verebilir veya pas gecebilir.');
         });
     }
 
     function placeBid() {
         if (!gameStarted) {
-            log('⚠️ Oyun başlamadı!');
+            log('⚠️ Oyun baslamadi!');
             return;
         }
         var roomRef = getRoomRef();
@@ -634,33 +643,33 @@
                 return;
             }
             if (data.currentPlayerId !== myId) {
-                log('⏳ Sıra sende değil!');
+                log('⏳ Sira sende degil!');
                 return;
             }
             var player = data.players[myId];
             if (!player || player.finished) return;
             
-            if (data.passedPlayers && data.passedPlayers.includes(myId)) {
-                log('⛔ Zaten pas geçtin!');
+            if (arrayIncludes(data.passedPlayers, myId)) {
+                log('⛔ Zaten pas gectin!');
                 return;
             }
             
             if (player.budget < 1) {
-                log('❌ Bütçen yok! Otomatik pas geçiyorsun.');
+                log('❌ Butcen yok! Otomatik pas geciyorsun.');
                 var updates2 = {};
                 var passedPlayers2 = data.passedPlayers || [];
-                if (!passedPlayers2.includes(myId)) {
+                if (!arrayIncludes(passedPlayers2, myId)) {
                     passedPlayers2.push(myId);
                     updates2.passedPlayers = passedPlayers2;
                     updates2.passCount = (data.passCount || 0) + 1;
-                    log(player.name + ' ⛔ otomatik pas geçti (bütçe yok).');
+                    log(player.name + ' ⛔ otomatik pas gecti (butce yok).');
                 }
                 var ids2 = Object.keys(data.players);
                 var idx2 = ids2.indexOf(myId);
                 var nextId2 = null;
-                for (var k2 = 1; k2 <= ids2.length; k2++) {
+                for (var k2 = 1; k2 <= ids2.length; k2 = k2 + 1) {
                     var ni2 = ids2[(idx2 + k2) % ids2.length];
-                    if (!data.players[ni2] || (!data.players[ni2].finished && !passedPlayers2.includes(ni2))) {
+                    if (!data.players[ni2] || (!data.players[ni2].finished && !arrayIncludes(passedPlayers2, ni2))) {
                         nextId2 = ni2;
                         break;
                     }
@@ -672,7 +681,7 @@
 
             var newBid = (data.highestBid || 0) + 1;
             if (newBid > player.budget) {
-                log('❌ Bütçen ' + player.budget + '$, ' + newBid + '$ yetmiyor!');
+                log('❌ Butcen ' + player.budget + '$, ' + newBid + '$ yetmiyor!');
                 return;
             }
 
@@ -685,9 +694,9 @@
             var passedPlayers3 = data.passedPlayers || [];
             var idx3 = ids3.indexOf(myId);
             var nextId3 = null;
-            for (var k3 = 1; k3 <= ids3.length; k3++) {
+            for (var k3 = 1; k3 <= ids3.length; k3 = k3 + 1) {
                 var ni3 = ids3[(idx3 + k3) % ids3.length];
-                if (!data.players[ni3] || (!data.players[ni3].finished && !passedPlayers3.includes(ni3) && ni3 !== myId)) {
+                if (!data.players[ni3] || (!data.players[ni3].finished && !arrayIncludes(passedPlayers3, ni3) && ni3 !== myId)) {
                     nextId3 = ni3;
                     break;
                 }
@@ -695,7 +704,7 @@
             
             if (nextId3) {
                 updates3.currentPlayerId = nextId3;
-                log(player.name + ' ➡️ ' + newBid + '$ verdi. Sıra ' + data.players[nextId3].name + '\'de.');
+                log(player.name + ' ➡️ ' + newBid + '$ verdi. Sira ' + data.players[nextId3].name + '\'de.');
             } else {
                 log(player.name + ' ➡️ ' + newBid + '$ verdi!');
             }
@@ -704,30 +713,27 @@
         });
     }
 
-    // ================================================================
-    // PAS GEÇ + ZORUNLU ALIM
-    // ================================================================
     function handlePass() {
         if (!gameStarted) {
-            log('⚠️ Oyun başlamadı!');
+            log('⚠️ Oyun baslamadi!');
             return;
         }
         var roomRef = getRoomRef();
         roomRef.once('value', function(snap) {
             var data = snap.val();
             if (!data || data.gameOver || data.turnPhase !== 'bidding' || !data.currentAnimal) {
-                log('⚠️ Pas geçilemez!');
+                log('⚠️ Pas gecilemez!');
                 return;
             }
             if (data.currentPlayerId !== myId) {
-                log('⏳ Sıra sende değil!');
+                log('⏳ Sira sende degil!');
                 return;
             }
             var player = data.players[myId];
             if (!player || player.finished) return;
             
-            if (data.passedPlayers && data.passedPlayers.includes(myId)) {
-                log('⛔ Zaten pas geçtin!');
+            if (arrayIncludes(data.passedPlayers, myId)) {
+                log('⛔ Zaten pas gectin!');
                 return;
             }
 
@@ -742,14 +748,13 @@
             if (data.highestBidder === myId) {
                 updates4.highestBid = 0;
                 updates4.highestBidder = null;
-                log(player.name + ' en yüksek tekliften vazgeçti!');
+                log(player.name + ' en yuksek tekliften vazgecti!');
             }
             
-            log(player.name + ' ⛔ pas geçti.');
+            log(player.name + ' ⛔ pas gecti.');
 
             var totalPlayers4 = Object.keys(data.players).length;
             
-            // HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
             if (passCount4 >= totalPlayers4) {
                 var spinnerId4 = data.spinnerId;
                 var spinner4 = data.players[spinnerId4];
@@ -758,11 +763,12 @@
                 if (spinner4 && spinner4.budget >= 1 && !spinner4.finished) {
                     spinner4.budget = spinner4.budget - 1;
                     spinner4.crew = spinner4.crew || [];
-                    spinner4.crew.push({ 
-                        name: animal4.name, 
-                        emoji: animal4.emoji, 
-                        power: animal4.power 
-                    });
+                    var newAnimal = {
+                        name: animal4.name,
+                        emoji: animal4.emoji,
+                        power: animal4.power
+                    };
+                    spinner4.crew.push(newAnimal);
                     spinner4.totalPower = (spinner4.totalPower || 0) + animal4.power;
                     if (spinner4.crew.length >= 5) spinner4.finished = true;
                     
@@ -772,14 +778,13 @@
                     updates4.passCount = 0;
                     updates4.passedPlayers = [];
                     
-                    log('🚨 ZORUNLU ALIM! ' + spinner4.name + ' ' + animal4.emoji + ' ' + animal4.name + ' 1$ ödeyerek aldı!');
+                    log('🚨 ZORUNLU ALIM! ' + spinner4.name + ' ' + animal4.emoji + ' ' + animal4.name + ' 1$ odeyerek aldi!');
                     log('📦 ' + spinner4.name + ' kadrosu: ' + spinner4.crew.length + '/5');
                     
-                    // Sırayı bir sonraki oyuncuya ver
                     var ids4 = Object.keys(data.players);
                     var idx4 = ids4.indexOf(spinnerId4);
                     var nextId4 = null;
-                    for (var k4 = 1; k4 <= ids4.length; k4++) {
+                    for (var k4 = 1; k4 <= ids4.length; k4 = k4 + 1) {
                         var ni4 = ids4[(idx4 + k4) % ids4.length];
                         if (!data.players[ni4] || !data.players[ni4].finished) {
                             nextId4 = ni4;
@@ -792,7 +797,8 @@
                     setTimeout(function() { checkGameOver(roomRef); }, 300);
                     return;
                 } else {
-                    log('⚠️ ' + (spinner4 ? spinner4.name : 'Çeviren kişi') + ' 1$ bütçesi yok veya kadrosu dolu! Hayvan elden gitti.');
+                    var spinnerName = spinner4 ? spinner4.name : 'Ceviren kisi';
+                    log('⚠️ ' + spinnerName + ' 1$ butcesi yok veya kadrosu dolu! Hayvan elden gitti.');
                     updates4.currentAnimal = null;
                     updates4.turnPhase = 'finished';
                     updates4.passCount = 0;
@@ -801,7 +807,7 @@
                     var ids5 = Object.keys(data.players);
                     var idx5 = ids5.indexOf(myId);
                     var nextId5 = null;
-                    for (var k5 = 1; k5 <= ids5.length; k5++) {
+                    for (var k5 = 1; k5 <= ids5.length; k5 = k5 + 1) {
                         var ni5 = ids5[(idx5 + k5) % ids5.length];
                         if (!data.players[ni5] || !data.players[ni5].finished) {
                             nextId5 = ni5;
@@ -816,13 +822,12 @@
                 }
             }
 
-            // Sırayı bir sonraki aktif oyuncuya geçir
             var ids6 = Object.keys(data.players);
             var idx6 = ids6.indexOf(myId);
             var nextId6 = null;
-            for (var k6 = 1; k6 <= ids6.length; k6++) {
+            for (var k6 = 1; k6 <= ids6.length; k6 = k6 + 1) {
                 var ni6 = ids6[(idx6 + k6) % ids6.length];
-                if (!data.players[ni6] || (!data.players[ni6].finished && !passedPlayers4.includes(ni6))) {
+                if (!data.players[ni6] || (!data.players[ni6].finished && !arrayIncludes(passedPlayers4, ni6))) {
                     nextId6 = ni6;
                     break;
                 }
@@ -830,15 +835,14 @@
             
             if (data.highestBidder && data.players[data.highestBidder] && 
                 !data.players[data.highestBidder].finished && 
-                !passedPlayers4.includes(data.highestBidder)) {
+                !arrayIncludes(passedPlayers4, data.highestBidder)) {
                 nextId6 = data.highestBidder;
             }
 
             if (nextId6) {
                 updates4.currentPlayerId = nextId6;
-                log('⏳ Sıra ' + data.players[nextId6].name + '\'de.');
+                log('⏳ Sira ' + data.players[nextId6].name + '\'de.');
             } else {
-                // Hiç aktif oyuncu kalmadıysa spinner zorunlu alır
                 var spinnerId6 = data.spinnerId;
                 var spinner6 = data.players[spinnerId6];
                 var animal6 = data.currentAnimal;
@@ -846,11 +850,12 @@
                 if (spinner6 && spinner6.budget >= 1 && !spinner6.finished) {
                     spinner6.budget = spinner6.budget - 1;
                     spinner6.crew = spinner6.crew || [];
-                    spinner6.crew.push({ 
-                        name: animal6.name, 
-                        emoji: animal6.emoji, 
-                        power: animal6.power 
-                    });
+                    var newAnimal6 = {
+                        name: animal6.name,
+                        emoji: animal6.emoji,
+                        power: animal6.power
+                    };
+                    spinner6.crew.push(newAnimal6);
                     spinner6.totalPower = (spinner6.totalPower || 0) + animal6.power;
                     if (spinner6.crew.length >= 5) spinner6.finished = true;
                     
@@ -860,12 +865,12 @@
                     updates4.passCount = 0;
                     updates4.passedPlayers = [];
                     
-                    log('🚨 ZORUNLU ALIM! ' + spinner6.name + ' ' + animal6.emoji + ' ' + animal6.name + ' 1$ ödeyerek aldı!');
+                    log('🚨 ZORUNLU ALIM! ' + spinner6.name + ' ' + animal6.emoji + ' ' + animal6.name + ' 1$ odeyerek aldi!');
                     
                     var ids7 = Object.keys(data.players);
                     var idx7 = ids7.indexOf(spinnerId6);
                     var nextId7 = null;
-                    for (var k7 = 1; k7 <= ids7.length; k7++) {
+                    for (var k7 = 1; k7 <= ids7.length; k7 = k7 + 1) {
                         var ni7 = ids7[(idx7 + k7) % ids7.length];
                         if (!data.players[ni7] || !data.players[ni7].finished) {
                             nextId7 = ni7;
@@ -893,9 +898,6 @@
         });
     }
 
-    // ================================================================
-    // OYUN BİTTİ Mİ KONTROL ET + NORMAL ALIM
-    // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
             var data = snap.val();
@@ -904,10 +906,9 @@
             var players = data.players || {};
             var ids = Object.keys(players);
             
-            // Oyun bitiş kontrolü
             var allDone = true;
             var allFull = true;
-            for (var i = 0; i < ids.length; i++) {
+            for (var i = 0; i < ids.length; i = i + 1) {
                 var id = ids[i];
                 var p = players[id];
                 if (!p.finished && p.budget >= 1) allDone = false;
@@ -917,12 +918,12 @@
             if (allDone || allFull) {
                 var maxP = -1;
                 var winId = null;
-                for (var j = 0; j < ids.length; j++) {
+                for (var j = 0; j < ids.length; j = j + 1) {
                     var pId = ids[j];
                     var p = players[pId];
                     var total = 0;
                     var crew = p.crew || [];
-                    for (var c = 0; c < crew.length; c++) {
+                    for (var c = 0; c < crew.length; c = c + 1) {
                         total = total + crew[c].power;
                     }
                     if (total > maxP) {
@@ -936,32 +937,32 @@
                     turnPhase: 'finished'
                 });
                 var winnerName = winId ? (players[winId] ? players[winId].name : '?') : '?';
-                log('🏆 OYUN BİTTİ! Kazanan: ' + winnerName + ' (⚡' + maxP + ')');
+                log('🏆 OYUN BITTI! Kazanan: ' + winnerName + ' (⚡' + maxP + ')');
                 return;
             }
             
-            // NORMAL ALIM: En yüksek teklifi veren hayvanı ALIR!
             if (data.turnPhase === 'bidding' && data.currentAnimal) {
                 var highestBidderId = data.highestBidder;
                 var highestBid = data.highestBid || 0;
                 
                 if (highestBidderId && highestBid > 0) {
-                    var winner = data.players[highestBidderId];
+                    var winner2 = data.players[highestBidderId];
                     var animal2 = data.currentAnimal;
                     
-                    if (winner && !winner.finished && winner.budget >= highestBid) {
-                        winner.budget = winner.budget - highestBid;
-                        winner.crew = winner.crew || [];
-                        winner.crew.push({ 
-                            name: animal2.name, 
-                            emoji: animal2.emoji, 
-                            power: animal2.power 
-                        });
-                        winner.totalPower = (winner.totalPower || 0) + animal2.power;
-                        if (winner.crew.length >= 5) winner.finished = true;
+                    if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
+                        winner2.budget = winner2.budget - highestBid;
+                        winner2.crew = winner2.crew || [];
+                        var newAnimal2 = {
+                            name: animal2.name,
+                            emoji: animal2.emoji,
+                            power: animal2.power
+                        };
+                        winner2.crew.push(newAnimal2);
+                        winner2.totalPower = (winner2.totalPower || 0) + animal2.power;
+                        if (winner2.crew.length >= 5) winner2.finished = true;
                         
                         var updates8 = {};
-                        updates8['players/' + highestBidderId] = winner;
+                        updates8['players/' + highestBidderId] = winner2;
                         updates8.currentAnimal = null;
                         updates8.turnPhase = 'finished';
                         updates8.passCount = 0;
@@ -972,7 +973,7 @@
                         var ids8 = Object.keys(data.players);
                         var idx8 = ids8.indexOf(highestBidderId);
                         var nextId8 = null;
-                        for (var k8 = 1; k8 <= ids8.length; k8++) {
+                        for (var k8 = 1; k8 <= ids8.length; k8 = k8 + 1) {
                             var ni8 = ids8[(idx8 + k8) % ids8.length];
                             if (!data.players[ni8] || !data.players[ni8].finished) {
                                 nextId8 = ni8;
@@ -982,8 +983,8 @@
                         if (nextId8) updates8.currentPlayerId = nextId8;
                         
                         roomRef.update(updates8);
-                        log('🏅 ' + winner.name + ' ' + animal2.emoji + ' ' + animal2.name + ' ' + highestBid + '$ ödeyerek kazandı!');
-                        log('📦 ' + winner.name + ' kadrosu: ' + winner.crew.length + '/5');
+                        log('🏅 ' + winner2.name + ' ' + animal2.emoji + ' ' + animal2.name + ' ' + highestBid + '$ odeyerek kazandi!');
+                        log('📦 ' + winner2.name + ' kadrosu: ' + winner2.crew.length + '/5');
                         
                         setTimeout(function() { checkGameOver(roomRef); }, 300);
                         return;
@@ -995,7 +996,7 @@
 
     function resetGame() {
         if (!isHost) {
-            log('⚠️ Sadece ev sahibi sıfırlayabilir!');
+            log('⚠️ Sadece ev sahibi sifirlayabilir!');
             return;
         }
         var roomRef = getRoomRef();
@@ -1005,7 +1006,7 @@
             var updates9 = {};
             var players = data.players || {};
             var ids = Object.keys(players);
-            for (var i = 0; i < ids.length; i++) {
+            for (var i = 0; i < ids.length; i = i + 1) {
                 var id = ids[i];
                 updates9['players/' + id + '/budget'] = 15;
                 updates9['players/' + id + '/crew'] = [];
@@ -1024,7 +1025,7 @@
             updates9.passedPlayers = [];
             updates9.currentPlayerId = ids[0] || null;
             roomRef.update(updates9);
-            log('🔄 Oyun sıfırlandı!');
+            log('🔄 Oyun sifirlandi!');
         });
     }
 
@@ -1038,7 +1039,7 @@
         var code = $('roomDisplay').textContent;
         if (code && code !== '-----') {
             navigator.clipboard.writeText(code).then(function() {
-                log('📋 Oda kodu kopyalandı!');
+                log('📋 Oda kodu kopyalandi!');
             });
         }
     });
@@ -1048,11 +1049,11 @@
     });
 
     var setupBtns = document.querySelectorAll('.setup-btn');
-    for (var i = 0; i < setupBtns.length; i++) {
+    for (var i = 0; i < setupBtns.length; i = i + 1) {
         var btn = setupBtns[i];
         btn.addEventListener('click', function() {
             var btns = document.querySelectorAll('.setup-btn');
-            for (var j = 0; j < btns.length; j++) {
+            for (var j = 0; j < btns.length; j = j + 1) {
                 btns[j].classList.remove('active');
             }
             this.classList.add('active');
@@ -1066,12 +1067,12 @@
     $('passBtn').addEventListener('click', handlePass);
 
     // ================================================================
-    // BAŞLANGIÇ
+    // BASLANGIC
     // ================================================================
-    log('🎮 Firebase ile gerçek zamanlı oyuna hoş geldin!');
-    log('📋 Oda oluştur veya mevcut bir odaya katıl.');
-    $('syncStatus').textContent = '✅ Bağlantı hazır';
-    console.log('✅ Oyun başlatıldı!');
+    log('🎮 Firebase ile gercek zamanli oyuna hos geldin!');
+    log('📋 Oda olustur veya mevcut bir odaya katil.');
+    $('syncStatus').textContent = '✅ Baglanti hazir';
+    console.log('✅ Oyun baslatildi!');
 </script>
 </body>
 </html>
