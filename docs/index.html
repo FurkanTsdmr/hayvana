@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🐾 Hayvan Savaşı - Online</title>
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
@@ -88,7 +87,6 @@
 <div class="container">
     <h1>⚔️ HAYVAN SAVAŞI ⚔️</h1>
 
-    <!-- LOBBY -->
     <div class="lobby">
         <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;align-items:center;">
             <input type="text" id="roomInput" placeholder="Kod (4 harf)" maxlength="4" style="text-transform:uppercase;">
@@ -108,7 +106,6 @@
         </div>
     </div>
 
-    <!-- OYUN -->
     <div class="top-bar">
         <button class="setup-btn" data-player="2" disabled>👥 2 Kişi</button>
         <button class="setup-btn" data-player="3" disabled>👥 3 Kişi</button>
@@ -209,6 +206,7 @@
     var isHost = false;
     var gameStarted = false;
     var gameData = null;
+    var isListenerActive = false;
 
     // ================================================================
     // DOM
@@ -257,6 +255,8 @@
         gameData = data;
         gameStarted = data.gameStarted || false;
 
+        console.log('🔄 UI güncelleniyor, gameStarted:', gameStarted);
+
         var players = data.players || {};
         var ids = Object.keys(players);
         var currentId = data.currentPlayerId || null;
@@ -292,11 +292,14 @@
         listEl.innerHTML = listHtml;
         $('playerCount').textContent = ids.length;
 
-        // Bekleme mesaji
+        // ============================================================
+        // ⭐ OYUNCU BEKLEME MESAJI - DÜZELTİLDİ!
+        // ============================================================
         var wMsg = $('waitingMsg');
         var setupBtns = document.querySelectorAll('.setup-btn');
         var resetBtn = $('resetBtn');
 
+        // Eğer oyun başlamadıysa ve 2'den az oyuncu varsa BEKLEME MESAJI GÖSTER
         if (!gameStarted && ids.length < 2) {
             wMsg.style.display = 'block';
             wMsg.textContent = '⏳ Oyuncu bekleniyor... (' + ids.length + '/2)';
@@ -304,13 +307,22 @@
                 setupBtns[j].disabled = true;
             }
             resetBtn.disabled = true;
-        } else if (!gameStarted && ids.length >= 2) {
+        } 
+        // Eğer oyun başlamadıysa ama 2 veya daha fazla oyuncu varsa BUTONLARI AKTİF ET
+        else if (!gameStarted && ids.length >= 2) {
             wMsg.style.display = 'none';
             for (var k = 0; k < setupBtns.length; k = k + 1) {
                 setupBtns[k].disabled = !isHost;
             }
             resetBtn.disabled = !isHost;
-        } else {
+            
+            // Eğer ev sahibiysen ve oyun başlamadıysa BUTONU AKTİF ET!
+            if (isHost) {
+                log('✅ ' + ids.length + ' oyuncu hazır! "2 Kişi" butonuna tıkla ve oyunu başlat.');
+            }
+        } 
+        // Oyun başladıysa tüm butonları pasif yap (ev sahibi hariç)
+        else {
             wMsg.style.display = 'none';
             for (var l = 0; l < setupBtns.length; l = l + 1) {
                 setupBtns[l].disabled = true;
@@ -349,12 +361,10 @@
         var bidderPlayer = bidder !== null ? (players[bidder] ? players[bidder].name : '-') : '-';
         $('highestBidder').textContent = bidderPlayer;
         
-        // Ceviren ve pas bilgisi
         var spinnerPlayer = spinnerId ? (players[spinnerId] ? players[spinnerId].name : '-') : '-';
         $('spinnerInfo').textContent = spinnerPlayer;
         $('passInfo').textContent = passCount + '/' + totalPlayers;
 
-        // Zorunlu alim uyarisi
         var forcedWarning = $('forcedWarning');
         if (phase === 'finished' && animal && passCount >= totalPlayers) {
             forcedWarning.style.display = 'block';
@@ -362,7 +372,6 @@
             forcedWarning.style.display = 'none';
         }
 
-        // Kazanan
         if (over && winner) {
             var w = players[winner];
             $('winnerBanner').style.display = 'block';
@@ -373,7 +382,6 @@
             $('winnerBanner').style.display = 'none';
         }
 
-        // Oyuncu kartlari
         var cardsEl = $('playerCards');
         cardsEl.innerHTML = '';
         if (ids.length === 0) {
@@ -517,6 +525,9 @@
     }
 
     function listenRoom(code) {
+        if (isListenerActive) return;
+        isListenerActive = true;
+        
         var roomRef = db.ref('rooms/' + code);
         roomRef.on('value', function(snap) {
             var data = snap.val();
