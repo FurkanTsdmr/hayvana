@@ -69,6 +69,18 @@
         .status-badge.host { background: #f7d875; color: #1e2c1a; }
         .status-badge.you { background: #4a9aff; color: #fff; }
         
+        .forced-warning {
+            background: #8a4a3a;
+            border: 2px solid #f7d875;
+            border-radius: 15px;
+            padding: 10px;
+            margin: 8px 0;
+            text-align: center;
+            font-weight: bold;
+            color: #f7d875;
+            display: none;
+        }
+        
         @media (max-width: 600px) { h1 { font-size: 1.3rem; } .animal-emoji { font-size: 3rem; } .player-grid { grid-template-columns: 1fr 1fr; } }
     </style>
 </head>
@@ -112,14 +124,24 @@
                     <div class="animal-name" id="animalName">HAYVAN YOK</div>
                     <div class="animal-power">⚡ Güç: <span id="animalPower">?</span></div>
                 </div>
+                
+                <!-- Zorunlu alım uyarısı -->
+                <div id="forcedWarning" class="forced-warning">
+                    ⚠️ Herkes pas geçti! Hayvan zorunlu alınacak!
+                </div>
+                
                 <div class="bid-controls">
-                    <button class="btn-bid" id="bidBtn" disabled>💰 +1$</button>
+                    <button class="btn-bid" id="bidBtn" disabled>💰 Arttır (+1$)</button>
                     <button class="btn-pass" id="passBtn" disabled>⛔ Pas</button>
                     <button class="btn-spin" id="spinBtn" disabled>🎲 ÇEVİR</button>
                 </div>
                 <div class="info-line">
                     <span>⏳ Sıra: <strong id="turnIndicator">-</strong></span>
                     <span>🏆 En Yüksek: <strong id="highestBid">0$</strong> (<span id="highestBidder">-</span>)</span>
+                </div>
+                <div class="info-line" style="background:#2a1a1a; border:1px solid #8a4a3a;">
+                    <span>🎯 Hayvanı Çeviren: <strong id="spinnerInfo">-</strong></span>
+                    <span>📦 Pas Geçenler: <strong id="passInfo">0</strong></span>
                 </div>
             </div>
             <div id="winnerBanner" class="winner-banner">🏆 KAZANAN:</div>
@@ -214,14 +236,18 @@
         const phase = data.turnPhase || 'idle';
         const over = data.gameOver || false;
         const winner = data.winnerId || null;
+        const spinnerId = data.spinnerId || null;
+        const passCount = data.passCount || 0;
+        const totalPlayers = ids.length;
 
         // Oyuncu listesi
         const listEl = $('playerList');
         listEl.innerHTML = ids.map(id => {
             const p = players[id];
             const isMe = id === myId;
-            return `<span style="background:#1a2e1f;padding:2px 10px;border-radius:15px;margin:2px;display:inline-block;">
-                ${p?.name || id} ${p?.isHost ? '⭐' : ''} ${isMe ? '👤' : ''}
+            const passed = data.passedPlayers && data.passedPlayers.includes(id);
+            return `<span style="background:#1a2e1f;padding:2px 10px;border-radius:15px;margin:2px;display:inline-block;${passed ? 'opacity:0.4;' : ''}">
+                ${p?.name || id} ${p?.isHost ? '⭐' : ''} ${isMe ? '👤' : ''} ${passed ? '⛔' : ''}
             </span>`;
         }).join(' ');
         $('playerCount').textContent = ids.length;
@@ -250,8 +276,9 @@
         const isMyTurn = currentId === myId;
         const myPlayer = players[myId];
         const finished = myPlayer?.finished || false;
-        const canBid = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over;
-        const canPass = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over;
+        const hasPassed = data.passedPlayers && data.passedPlayers.includes(myId);
+        const canBid = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over && !hasPassed;
+        const canPass = gameStarted && phase === 'bidding' && isMyTurn && !finished && animal && !over && !hasPassed;
         const canSpin = gameStarted && (phase === 'idle' || phase === 'finished') && isMyTurn && !finished && !over;
 
         $('bidBtn').disabled = !canBid;
@@ -273,6 +300,18 @@
         $('turnIndicator').textContent = players[currentId]?.name || '-';
         $('highestBid').textContent = bid + '$';
         $('highestBidder').textContent = bidder !== null ? (players[bidder]?.name || '-') : '-';
+        
+        // Çeviren ve pas bilgisi
+        $('spinnerInfo').textContent = spinnerId ? (players[spinnerId]?.name || '-') : '-';
+        $('passInfo').textContent = passCount + '/' + totalPlayers;
+
+        // Zorunlu alım uyarısı
+        const forcedWarning = $('forcedWarning');
+        if (phase === 'finished' && animal && passCount >= totalPlayers) {
+            forcedWarning.style.display = 'block';
+        } else {
+            forcedWarning.style.display = 'none';
+        }
 
         // Kazanan
         if (over && winner) {
@@ -298,6 +337,9 @@
             if (id === currentId && !over) card.classList.add('active');
             if (p.finished) card.classList.add('finished');
             if (id === myId) card.classList.add('you');
+            
+            const passed = data.passedPlayers && data.passedPlayers.includes(id);
+            if (passed) card.style.opacity = '0.4';
 
             const crewHtml = (p.crew || []).length > 0 
                 ? p.crew.map(a => `<span>${a.emoji}${a.name}(${a.power})</span>`).join(' ')
@@ -305,7 +347,7 @@
 
             card.innerHTML = `
                 <div style="display:flex;justify-content:space-between;flex-wrap:wrap;">
-                    <span class="player-name">${p.name}</span>
+                    <span class="player-name">${p.name} ${passed ? '⛔' : ''}</span>
                     <span class="player-budget">💰${p.budget || 0}$</span>
                 </div>
                 <div style="font-size:0.7rem;margin-top:3px;">
@@ -349,6 +391,7 @@
             },
             currentPlayerId: myId,
             currentAnimal: null,
+            spinnerId: null,
             highestBid: 0,
             highestBidder: null,
             turnPhase: 'idle',
@@ -356,7 +399,8 @@
             winnerId: null,
             gameStarted: false,
             playerCount: 1,
-            passCount: 0
+            passCount: 0,
+            passedPlayers: []
         });
 
         log('✅ Oda oluşturuldu! Kod: ' + code);
@@ -463,10 +507,12 @@
             updates['winnerId'] = null;
             updates['currentPlayerId'] = ids[0];
             updates['currentAnimal'] = null;
+            updates['spinnerId'] = null;
             updates['highestBid'] = 0;
             updates['highestBidder'] = null;
             updates['turnPhase'] = 'idle';
             updates['passCount'] = 0;
+            updates['passedPlayers'] = [];
 
             roomRef.update(updates);
             log('🎮 Oyun başladı! ' + ids.length + ' kişi.');
@@ -474,6 +520,9 @@
         });
     }
 
+    // ================================================================
+    // ⭐ ÇARKI ÇEVİR (Hayvanı çeviren kişiyi kaydediyoruz)
+    // ================================================================
     function spinAnimal() {
         if (!gameStarted) {
             log('⚠️ Oyun başlamadı!');
@@ -507,18 +556,21 @@
             const animal = randomAnimal();
             const updates = {
                 currentAnimal: animal,
+                spinnerId: myId,  // 👈 Hayvanı çeviren kişiyi kaydediyoruz!
                 highestBid: 0,
                 highestBidder: null,
                 turnPhase: 'bidding',
-                passCount: 0
+                passCount: 0,
+                passedPlayers: []
             };
             roomRef.update(updates);
             log('🎲 ' + animal.emoji + ' ' + animal.name + ' (⚡' + animal.power + ') çıktı!');
+            log('💡 ' + data.players[myId].name + ' 1$ teklif verebilir veya pas geçebilir.');
         });
     }
 
     // ================================================================
-    // ⭐ DÜZELTİLMİŞ placeBid() - Sıra bir sonraki oyuncuya geçer!
+    // ⭐ TEKLİF VER (Arttır)
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -538,38 +590,69 @@
             }
             const player = data.players[myId];
             if (!player || player.finished) return;
+            
+            // Pas geçmiş mi kontrol et
+            if (data.passedPlayers && data.passedPlayers.includes(myId)) {
+                log('⛔ Zaten pas geçtin!');
+                return;
+            }
+            
             if (player.budget < 1) {
-                log('❌ Bütçen yok!');
+                log('❌ Bütçen yok! Otomatik pas geçiyorsun.');
+                // Otomatik pas
+                let updates = {};
+                const passedPlayers = data.passedPlayers || [];
+                if (!passedPlayers.includes(myId)) {
+                    passedPlayers.push(myId);
+                    updates.passedPlayers = passedPlayers;
+                    updates.passCount = (data.passCount || 0) + 1;
+                    log(player.name + ' ⛔ otomatik pas geçti (bütçe yok).');
+                }
+                // Sırayı geç
+                const ids = Object.keys(data.players);
+                let idx = ids.indexOf(myId);
+                let nextId = null;
+                for (let i = 1; i <= ids.length; i++) {
+                    const ni = ids[(idx + i) % ids.length];
+                    if (!data.players[ni]?.finished && !passedPlayers.includes(ni)) {
+                        nextId = ni; break;
+                    }
+                }
+                if (nextId) updates.currentPlayerId = nextId;
+                roomRef.update(updates);
                 return;
             }
 
+            // Yeni teklif: en yüksek teklifin +1$'ı
             const newBid = (data.highestBid || 0) + 1;
             if (newBid > player.budget) {
                 log('❌ Bütçen ' + player.budget + '$, ' + newBid + '$ yetmiyor!');
                 return;
             }
 
-            // Teklifi güncelle
             const updates = {
                 highestBid: newBid,
                 highestBidder: myId
             };
 
-            // Sırayı bir sonraki aktif oyuncuya geçir
+            // Sırayı bir sonraki aktif oyuncuya geçir (pas geçmeyen)
             const ids = Object.keys(data.players);
+            const passedPlayers = data.passedPlayers || [];
             let idx = ids.indexOf(myId);
             let nextId = null;
             for (let i = 1; i <= ids.length; i++) {
                 const ni = ids[(idx + i) % ids.length];
-                if (!data.players[ni]?.finished && data.players[ni]?.budget >= 1) {
+                if (!data.players[ni]?.finished && !passedPlayers.includes(ni) && ni !== myId) {
                     nextId = ni;
                     break;
                 }
             }
+            
             if (nextId) {
                 updates.currentPlayerId = nextId;
                 log(player.name + ' ➡️ ' + newBid + '$ verdi. Sıra ' + data.players[nextId].name + '\'de.');
             } else {
+                // Herkes pas geçtiyse veya tek kişi kaldıysa
                 log(player.name + ' ➡️ ' + newBid + '$ verdi!');
             }
 
@@ -578,7 +661,7 @@
     }
 
     // ================================================================
-    // ⭐ DÜZELTİLMİŞ handlePass() - Pas geçince sıra geçer!
+    // ⭐ PAS GEÇ
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -598,8 +681,22 @@
             }
             const player = data.players[myId];
             if (!player || player.finished) return;
+            
+            // Zaten pas geçmiş mi?
+            if (data.passedPlayers && data.passedPlayers.includes(myId)) {
+                log('⛔ Zaten pas geçtin!');
+                return;
+            }
 
             let updates = {};
+            
+            // Pas geçenleri listeye ekle
+            const passedPlayers = data.passedPlayers || [];
+            passedPlayers.push(myId);
+            updates.passedPlayers = passedPlayers;
+            
+            const passCount = (data.passCount || 0) + 1;
+            updates.passCount = passCount;
             
             // En yüksek teklifi veren pas geçiyorsa sıfırla
             if (data.highestBidder === myId) {
@@ -607,21 +704,58 @@
                 updates.highestBidder = null;
                 log(player.name + ' en yüksek tekliften vazgeçti!');
             }
-
-            const passCount = (data.passCount || 0) + 1;
-            updates.passCount = passCount;
+            
             log(player.name + ' ⛔ pas geçti.');
 
-            const activePlayers = Object.keys(data.players).filter(id => !data.players[id].finished);
-
-            // Herkes pas geçtiyse ZORUNLU ALIM
-            if (passCount >= activePlayers.length) {
-                const forced = data.players[myId];
-                if (forced.budget < 1) {
-                    log('⚠️ ' + forced.name + ' 1$ bütçesi yok! Hayvan gitti.');
+            const totalPlayers = Object.keys(data.players).length;
+            
+            // HERKES PAS GEÇTİ Mİ?
+            if (passCount >= totalPlayers) {
+                // ZORUNLU ALIM! Hayvanı çeviren kişi alır.
+                const spinnerId = data.spinnerId;
+                const spinner = data.players[spinnerId];
+                
+                if (spinner && spinner.budget >= 1 && !spinner.finished) {
+                    // Çeviren kişi 1$ ödeyerek alır
+                    const animal = data.currentAnimal;
+                    spinner.budget -= 1;
+                    spinner.crew = spinner.crew || [];
+                    spinner.crew.push({ ...animal });
+                    spinner.totalPower = (spinner.totalPower || 0) + animal.power;
+                    if (spinner.crew.length >= 5) spinner.finished = true;
+                    
+                    updates['players/' + spinnerId] = spinner;
                     updates.currentAnimal = null;
                     updates.turnPhase = 'finished';
                     updates.passCount = 0;
+                    updates.passedPlayers = [];
+                    
+                    log('🚨 ZORUNLU ALIM! ' + spinner.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$ ödeyerek aldı!');
+                    log('📦 ' + spinner.name + ' kadrosu: ' + spinner.crew.length + '/5');
+                    
+                    // Sırayı bir sonraki oyuncuya ver
+                    const ids = Object.keys(data.players);
+                    let idx = ids.indexOf(spinnerId);
+                    let nextId = null;
+                    for (let i = 1; i <= ids.length; i++) {
+                        const ni = ids[(idx + i) % ids.length];
+                        if (!data.players[ni]?.finished) { nextId = ni; break; }
+                    }
+                    if (nextId) updates.currentPlayerId = nextId;
+                    
+                    roomRef.update(updates);
+                    
+                    // Oyun bitti mi kontrol et
+                    setTimeout(() => checkGameOver(roomRef), 300);
+                    return;
+                } else {
+                    // Çeviren kişi alamıyor (bütçe yok veya kadrosu dolu)
+                    log('⚠️ ' + (spinner?.name || 'Çeviren kişi') + ' 1$ bütçesi yok veya kadrosu dolu! Hayvan elden gitti.');
+                    updates.currentAnimal = null;
+                    updates.turnPhase = 'finished';
+                    updates.passCount = 0;
+                    updates.passedPlayers = [];
+                    
                     // Sırayı bir sonraki oyuncuya ver
                     const ids = Object.keys(data.players);
                     let idx = ids.indexOf(myId);
@@ -631,83 +765,103 @@
                         if (!data.players[ni]?.finished) { nextId = ni; break; }
                     }
                     if (nextId) updates.currentPlayerId = nextId;
+                    
                     roomRef.update(updates);
-                    setTimeout(() => nextTurn(roomRef), 400);
+                    setTimeout(() => checkGameOver(roomRef), 300);
                     return;
                 }
-                const animal = data.currentAnimal;
-                forced.budget -= 1;
-                forced.crew = forced.crew || [];
-                forced.crew.push({ ...animal });
-                forced.totalPower = (forced.totalPower || 0) + animal.power;
-                if (forced.crew.length >= 5) forced.finished = true;
-                updates['players/' + myId] = forced;
-                updates.currentAnimal = null;
-                updates.turnPhase = 'finished';
-                updates.passCount = 0;
-                log('🚨 ZORUNLU ALIM! ' + forced.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$');
-                
-                // Sırayı bir sonraki oyuncuya ver
-                const ids = Object.keys(data.players);
-                let idx = ids.indexOf(myId);
-                let nextId = null;
-                for (let i = 1; i <= ids.length; i++) {
-                    const ni = ids[(idx + i) % ids.length];
-                    if (!data.players[ni]?.finished) { nextId = ni; break; }
-                }
-                if (nextId) updates.currentPlayerId = nextId;
-                roomRef.update(updates);
-                setTimeout(() => nextTurn(roomRef), 500);
-                return;
             }
 
-            // Sırayı bir sonraki aktif oyuncuya geçir
+            // Sırayı bir sonraki aktif oyuncuya geçir (pas geçmeyen)
             const ids = Object.keys(data.players);
             let idx = ids.indexOf(myId);
             let nextId = null;
             for (let i = 1; i <= ids.length; i++) {
                 const ni = ids[(idx + i) % ids.length];
-                if (!data.players[ni]?.finished && data.players[ni]?.budget >= 1) {
+                if (!data.players[ni]?.finished && !passedPlayers.includes(ni)) {
                     nextId = ni;
                     break;
                 }
             }
-
-            // En yüksek teklifi veren varsa sırayı ona ver (ama pas geçmediyse)
+            
+            // En yüksek teklifi veren varsa ve pas geçmediyse sırayı ona ver
             if (data.highestBidder && data.players[data.highestBidder] && 
                 !data.players[data.highestBidder].finished && 
-                data.highestBidder !== myId) {
+                !passedPlayers.includes(data.highestBidder)) {
                 nextId = data.highestBidder;
             }
 
             if (nextId) {
                 updates.currentPlayerId = nextId;
                 log('⏳ Sıra ' + data.players[nextId].name + '\'de.');
+            } else {
+                // Hiç aktif oyuncu kalmadıysa zorunlu alım yap
+                // Bu durumda spinner alır
+                const spinnerId = data.spinnerId;
+                const spinner = data.players[spinnerId];
+                if (spinner && spinner.budget >= 1 && !spinner.finished) {
+                    const animal = data.currentAnimal;
+                    spinner.budget -= 1;
+                    spinner.crew = spinner.crew || [];
+                    spinner.crew.push({ ...animal });
+                    spinner.totalPower = (spinner.totalPower || 0) + animal.power;
+                    if (spinner.crew.length >= 5) spinner.finished = true;
+                    updates['players/' + spinnerId] = spinner;
+                    updates.currentAnimal = null;
+                    updates.turnPhase = 'finished';
+                    updates.passCount = 0;
+                    updates.passedPlayers = [];
+                    log('🚨 ZORUNLU ALIM! ' + spinner.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$ ödeyerek aldı!');
+                    
+                    // Sırayı bir sonraki oyuncuya ver
+                    const ids2 = Object.keys(data.players);
+                    let idx2 = ids2.indexOf(spinnerId);
+                    let nextId2 = null;
+                    for (let i = 1; i <= ids2.length; i++) {
+                        const ni = ids2[(idx2 + i) % ids2.length];
+                        if (!data.players[ni]?.finished) { nextId2 = ni; break; }
+                    }
+                    if (nextId2) updates.currentPlayerId = nextId2;
+                    roomRef.update(updates);
+                    setTimeout(() => checkGameOver(roomRef), 300);
+                    return;
+                } else {
+                    log('⚠️ Hayvan elden gitti!');
+                    updates.currentAnimal = null;
+                    updates.turnPhase = 'finished';
+                    updates.passCount = 0;
+                    updates.passedPlayers = [];
+                    roomRef.update(updates);
+                    setTimeout(() => checkGameOver(roomRef), 300);
+                    return;
+                }
             }
+            
             roomRef.update(updates);
         });
     }
 
-    function nextTurn(roomRef) {
+    // ================================================================
+    // OYUN BİTTİ Mİ KONTROL ET
+    // ================================================================
+    function checkGameOver(roomRef) {
         roomRef.once('value', (snap) => {
             const data = snap.val();
-            if (!data || data.gameOver) return;
+            if (!data) return;
             const players = data.players || {};
             const ids = Object.keys(players);
-            let currentId = data.currentPlayerId;
-            let idx = ids.indexOf(currentId);
-            let nextId = null;
-            for (let i = 1; i <= ids.length; i++) {
-                const ni = ids[(idx + i) % ids.length];
-                if (!players[ni]?.finished) { nextId = ni; break; }
-            }
-
+            
+            // Tüm oyuncular bitti mi veya bütçesi bitti mi?
             const allDone = ids.every(id => players[id].finished || players[id].budget < 1);
-            if (allDone) {
+            // Tüm oyuncuların kadrosu 5 oldu mu?
+            const allFull = ids.every(id => (players[id].crew || []).length >= 5);
+            
+            if (allDone || allFull) {
                 let maxP = -1, winId = null;
                 ids.forEach(id => {
-                    if (players[id].totalPower > maxP) {
-                        maxP = players[id].totalPower;
+                    const total = (players[id].crew || []).reduce((sum, a) => sum + a.power, 0);
+                    if (total > maxP) {
+                        maxP = total;
                         winId = id;
                     }
                 });
@@ -716,19 +870,8 @@
                     winnerId: winId,
                     turnPhase: 'finished'
                 });
-                log('🏆 OYUN BİTTİ! Kazanan: ' + (players[winId]?.name || '?') + ' (' + maxP + ')');
-                return;
+                log('🏆 OYUN BİTTİ! Kazanan: ' + (players[winId]?.name || '?') + ' (⚡' + maxP + ')');
             }
-
-            roomRef.update({
-                currentPlayerId: nextId || ids[0],
-                currentAnimal: null,
-                highestBid: 0,
-                highestBidder: null,
-                turnPhase: 'idle',
-                passCount: 0
-            });
-            log('⏳ Sıra ' + (players[nextId]?.name || '?') + 'de. Çarkı çevirin!');
         });
     }
 
@@ -751,11 +894,13 @@
             updates.gameOver = false;
             updates.winnerId = null;
             updates.currentAnimal = null;
+            updates.spinnerId = null;
             updates.highestBid = 0;
             updates.highestBidder = null;
             updates.turnPhase = 'idle';
             updates.gameStarted = true;
             updates.passCount = 0;
+            updates.passedPlayers = [];
             updates.currentPlayerId = Object.keys(data.players)[0];
             roomRef.update(updates);
             log('🔄 Oyun sıfırlandı!');
