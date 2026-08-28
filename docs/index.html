@@ -133,7 +133,7 @@
 
 <script>
     // ================================================================
-    // 🔥 FIREBASE KONFİGÜRASYONU - YENİ PROJEN!
+    // 🔥 FIREBASE KONFİGÜRASYONU
     // ================================================================
     const firebaseConfig = {
         apiKey: "AIzaSyDPB_kxCOm5FzjNfhJiJliIBg_kRTLJzbQ",
@@ -146,12 +146,8 @@
         measurementId: "G-Y9694RE0JX"
     };
 
-    // Firebase başlat
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-
-    console.log('🔥 Firebase bağlantısı başlatıldı!');
-    console.log('📡 Veritabanı:', firebaseConfig.databaseURL);
 
     // ================================================================
     // HAYVANLAR
@@ -521,6 +517,9 @@
         });
     }
 
+    // ================================================================
+    // ⭐ DÜZELTİLMİŞ placeBid() - Sıra bir sonraki oyuncuya geçer!
+    // ================================================================
     function placeBid() {
         if (!gameStarted) {
             log('⚠️ Oyun başlamadı!');
@@ -550,15 +549,37 @@
                 return;
             }
 
+            // Teklifi güncelle
             const updates = {
                 highestBid: newBid,
                 highestBidder: myId
             };
+
+            // Sırayı bir sonraki aktif oyuncuya geçir
+            const ids = Object.keys(data.players);
+            let idx = ids.indexOf(myId);
+            let nextId = null;
+            for (let i = 1; i <= ids.length; i++) {
+                const ni = ids[(idx + i) % ids.length];
+                if (!data.players[ni]?.finished && data.players[ni]?.budget >= 1) {
+                    nextId = ni;
+                    break;
+                }
+            }
+            if (nextId) {
+                updates.currentPlayerId = nextId;
+                log(player.name + ' ➡️ ' + newBid + '$ verdi. Sıra ' + data.players[nextId].name + '\'de.');
+            } else {
+                log(player.name + ' ➡️ ' + newBid + '$ verdi!');
+            }
+
             roomRef.update(updates);
-            log(player.name + ' ➡️ ' + newBid + '$');
         });
     }
 
+    // ================================================================
+    // ⭐ DÜZELTİLMİŞ handlePass() - Pas geçince sıra geçer!
+    // ================================================================
     function handlePass() {
         if (!gameStarted) {
             log('⚠️ Oyun başlamadı!');
@@ -579,24 +600,37 @@
             if (!player || player.finished) return;
 
             let updates = {};
+            
+            // En yüksek teklifi veren pas geçiyorsa sıfırla
             if (data.highestBidder === myId) {
                 updates.highestBid = 0;
                 updates.highestBidder = null;
+                log(player.name + ' en yüksek tekliften vazgeçti!');
             }
 
             const passCount = (data.passCount || 0) + 1;
             updates.passCount = passCount;
             log(player.name + ' ⛔ pas geçti.');
 
-            const active = Object.keys(data.players).filter(id => !data.players[id].finished);
-            if (passCount >= active.length) {
-                // ZORUNLU ALIM
+            const activePlayers = Object.keys(data.players).filter(id => !data.players[id].finished);
+
+            // Herkes pas geçtiyse ZORUNLU ALIM
+            if (passCount >= activePlayers.length) {
                 const forced = data.players[myId];
                 if (forced.budget < 1) {
                     log('⚠️ ' + forced.name + ' 1$ bütçesi yok! Hayvan gitti.');
                     updates.currentAnimal = null;
                     updates.turnPhase = 'finished';
                     updates.passCount = 0;
+                    // Sırayı bir sonraki oyuncuya ver
+                    const ids = Object.keys(data.players);
+                    let idx = ids.indexOf(myId);
+                    let nextId = null;
+                    for (let i = 1; i <= ids.length; i++) {
+                        const ni = ids[(idx + i) % ids.length];
+                        if (!data.players[ni]?.finished) { nextId = ni; break; }
+                    }
+                    if (nextId) updates.currentPlayerId = nextId;
                     roomRef.update(updates);
                     setTimeout(() => nextTurn(roomRef), 400);
                     return;
@@ -612,12 +646,22 @@
                 updates.turnPhase = 'finished';
                 updates.passCount = 0;
                 log('🚨 ZORUNLU ALIM! ' + forced.name + ' ' + animal.emoji + ' ' + animal.name + ' 1$');
+                
+                // Sırayı bir sonraki oyuncuya ver
+                const ids = Object.keys(data.players);
+                let idx = ids.indexOf(myId);
+                let nextId = null;
+                for (let i = 1; i <= ids.length; i++) {
+                    const ni = ids[(idx + i) % ids.length];
+                    if (!data.players[ni]?.finished) { nextId = ni; break; }
+                }
+                if (nextId) updates.currentPlayerId = nextId;
                 roomRef.update(updates);
                 setTimeout(() => nextTurn(roomRef), 500);
                 return;
             }
 
-            // Sırayı geç
+            // Sırayı bir sonraki aktif oyuncuya geçir
             const ids = Object.keys(data.players);
             let idx = ids.indexOf(myId);
             let nextId = null;
@@ -628,10 +672,18 @@
                     break;
                 }
             }
-            if (data.highestBidder && data.players[data.highestBidder] && !data.players[data.highestBidder].finished) {
+
+            // En yüksek teklifi veren varsa sırayı ona ver (ama pas geçmediyse)
+            if (data.highestBidder && data.players[data.highestBidder] && 
+                !data.players[data.highestBidder].finished && 
+                data.highestBidder !== myId) {
                 nextId = data.highestBidder;
             }
-            if (nextId) updates.currentPlayerId = nextId;
+
+            if (nextId) {
+                updates.currentPlayerId = nextId;
+                log('⏳ Sıra ' + data.players[nextId].name + '\'de.');
+            }
             roomRef.update(updates);
         });
     }
@@ -747,7 +799,6 @@
     log('📋 Oda oluştur veya mevcut bir odaya katıl.');
     $('syncStatus').textContent = '✅ Bağlantı hazır';
     console.log('✅ Oyun başlatıldı!');
-    console.log('🔥 Veritabanı URL:', firebaseConfig.databaseURL);
 </script>
 </body>
 </html>
