@@ -206,7 +206,6 @@
     var isHost = false;
     var gameStarted = false;
     var gameData = null;
-    var isListenerActive = false;
 
     // ================================================================
     // DOM
@@ -255,7 +254,7 @@
         gameData = data;
         gameStarted = data.gameStarted || false;
 
-        console.log('🔄 UI güncelleniyor, gameStarted:', gameStarted);
+        console.log('🔄 UI guncelleniyor, oyuncu sayisi:', Object.keys(data.players || {}).length);
 
         var players = data.players || {};
         var ids = Object.keys(players);
@@ -270,7 +269,9 @@
         var passCount = data.passCount || 0;
         var totalPlayers = ids.length;
 
-        // Oyuncu listesi
+        // ============================================================
+        // ⭐ OYUNCU LISTESI
+        // ============================================================
         var listEl = $('playerList');
         var listHtml = '';
         for (var i = 0; i < ids.length; i = i + 1) {
@@ -293,13 +294,13 @@
         $('playerCount').textContent = ids.length;
 
         // ============================================================
-        // ⭐ OYUNCU BEKLEME MESAJI - DÜZELTİLDİ!
+        // ⭐ OYUN BASLATMA BUTONLARI - DÜZELTİLDİ!
         // ============================================================
         var wMsg = $('waitingMsg');
         var setupBtns = document.querySelectorAll('.setup-btn');
         var resetBtn = $('resetBtn');
 
-        // Eğer oyun başlamadıysa ve 2'den az oyuncu varsa BEKLEME MESAJI GÖSTER
+        // Eğer oyun başlamadıysa ve 2'den az oyuncu varsa
         if (!gameStarted && ids.length < 2) {
             wMsg.style.display = 'block';
             wMsg.textContent = '⏳ Oyuncu bekleniyor... (' + ids.length + '/2)';
@@ -308,7 +309,7 @@
             }
             resetBtn.disabled = true;
         } 
-        // Eğer oyun başlamadıysa ama 2 veya daha fazla oyuncu varsa BUTONLARI AKTİF ET
+        // Eğer oyun başlamadıysa ve 2 veya daha fazla oyuncu varsa
         else if (!gameStarted && ids.length >= 2) {
             wMsg.style.display = 'none';
             for (var k = 0; k < setupBtns.length; k = k + 1) {
@@ -316,12 +317,12 @@
             }
             resetBtn.disabled = !isHost;
             
-            // Eğer ev sahibiysen ve oyun başlamadıysa BUTONU AKTİF ET!
+            // Ev sahibine mesaj
             if (isHost) {
-                log('✅ ' + ids.length + ' oyuncu hazır! "2 Kişi" butonuna tıkla ve oyunu başlat.');
+                log('✅ ' + ids.length + ' oyuncu hazir! "2 Kişi" butonuna tikla.');
             }
         } 
-        // Oyun başladıysa tüm butonları pasif yap (ev sahibi hariç)
+        // Oyun başladıysa
         else {
             wMsg.style.display = 'none';
             for (var l = 0; l < setupBtns.length; l = l + 1) {
@@ -330,7 +331,9 @@
             resetBtn.disabled = !isHost;
         }
 
-        // Butonlar
+        // ============================================================
+        // OYUN BUTONLARI
+        // ============================================================
         var isMyTurn = (currentId === myId);
         var myPlayer = players[myId];
         var finished = myPlayer ? myPlayer.finished : false;
@@ -474,6 +477,9 @@
         listenRoom(code);
     }
 
+    // ================================================================
+    // ⭐ DÜZELTİLMİŞ joinRoom() - Oyuncu doğru ekleniyor!
+    // ================================================================
     function joinRoom() {
         console.log('Odaya katilinior...');
         var code = $('roomInput').value.toUpperCase().trim();
@@ -504,9 +510,10 @@
                 return;
             }
 
+            // ⭐ DOĞRU GÜNCELLEME - players/ID şeklinde!
             var updates = {};
-            var newPlayer = {};
-            newPlayer[myId] = {
+            var newPlayerKey = 'players/' + myId;
+            updates[newPlayerKey] = {
                 name: 'Oyuncu ' + (count + 1),
                 budget: 15,
                 crew: [],
@@ -514,20 +521,21 @@
                 finished: false,
                 isHost: false
             };
-            updates['players'] = newPlayer;
             updates['playerCount'] = count + 1;
 
-            roomRef.update(updates);
-            log('✅ Odaya katildin! (' + (count + 1) + '/4)');
-            $('syncStatus').textContent = '✅ Baglandi';
-            listenRoom(code);
+            roomRef.update(updates, function(error) {
+                if (error) {
+                    log('❌ Hata: ' + error);
+                } else {
+                    log('✅ Odaya katildin! (' + (count + 1) + '/4)');
+                    $('syncStatus').textContent = '✅ Baglandi';
+                    listenRoom(code);
+                }
+            });
         });
     }
 
     function listenRoom(code) {
-        if (isListenerActive) return;
-        isListenerActive = true;
-        
         var roomRef = db.ref('rooms/' + code);
         roomRef.on('value', function(snap) {
             var data = snap.val();
