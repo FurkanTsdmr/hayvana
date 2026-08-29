@@ -633,7 +633,7 @@
     }
 
     // ================================================================
-    // TEKLIF VER
+    // ⭐ TEKLIF VER + BÜTÇEYİ DÜŞÜR!
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -772,7 +772,6 @@
                 var animal4 = data.currentAnimal;
                 
                 if (spinner4 && spinner4.budget >= 1 && !spinner4.finished) {
-                    // ✅ BÜTÇEDEN 1$ DÜŞÜYOR (ZORUNLU ALIM)
                     var oldBudget = spinner4.budget;
                     spinner4.budget = spinner4.budget - 1;
                     spinner4.crew = spinner4.crew || [];
