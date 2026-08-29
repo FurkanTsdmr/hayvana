@@ -529,7 +529,7 @@
     }
 
     // ================================================================
-    // OYUN HAMLELERI
+    // ⭐ OYUN BAŞLAT - BÜTÇEYİ KORU!
     // ================================================================
     function startGame(count) {
         if (!isHost) {
@@ -552,7 +552,12 @@
             for (var i = 0; i < ids.length; i = i + 1) {
                 var id = ids[i];
                 updates['players/' + id + '/name'] = names[i % names.length] + (i + 1);
-                updates['players/' + id + '/budget'] = 15;
+                // ⭐ BÜTÇEYİ KORU! Sadece eğer budget 0 veya tanımsızsa 15 yap
+                if (!players[id] || players[id].budget === undefined) {
+                    updates['players/' + id + '/budget'] = 15;
+                } else {
+                    updates['players/' + id + '/budget'] = players[id].budget;
+                }
                 updates['players/' + id + '/crew'] = [];
                 updates['players/' + id + '/totalPower'] = 0;
                 updates['players/' + id + '/finished'] = false;
@@ -626,7 +631,7 @@
     }
 
     // ================================================================
-    // ⭐ DÜZELTİLMİŞ placeBid() - HIGHEST BİD DOĞRU ARTIYOR!
+    // ⭐ TEKLİF VER - HIGHEST BİD DOĞRU ARTIYOR!
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -677,7 +682,6 @@
                 return;
             }
 
-            // ⭐ BURASI ÇOK ÖNEMLİ! highestBid + 1 yapıyoruz
             var currentHighestBid = data.highestBid || 0;
             var newBid = currentHighestBid + 1;
             
@@ -900,7 +904,7 @@
     }
 
     // ================================================================
-    // ⭐ DÜZELTİLMİŞ checkGameOver() - BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
+    // ⭐ OYUN BİTTİ Mİ KONTROL ET + BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
     // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
@@ -948,18 +952,18 @@
             
             // ============================================================
             // ⭐ NORMAL ALIM: En yüksek teklifi veren hayvanı ALIR!
+            // BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
             // ============================================================
             if (data.turnPhase === 'bidding' && data.currentAnimal) {
                 var highestBidderId = data.highestBidder;
                 var highestBid = data.highestBid || 0;
                 
-                // Eğer en yüksek teklif 0'dan büyükse ve bir kazanan varsa
                 if (highestBidderId && highestBid > 0) {
                     var winner2 = data.players[highestBidderId];
                     var animal2 = data.currentAnimal;
                     
                     if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
-                        // ✅ DOĞRU: Kazanan teklif ettiği kadar öder!
+                        // ✅ BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
                         winner2.budget = winner2.budget - highestBid;
                         winner2.crew = winner2.crew || [];
                         var newAnimal2 = {
@@ -980,7 +984,6 @@
                         updates8.highestBid = 0;
                         updates8.highestBidder = null;
                         
-                        // Sırayı bir sonraki oyuncuya ver
                         var ids8 = Object.keys(data.players);
                         var idx8 = ids8.indexOf(highestBidderId);
                         var nextId8 = null;
