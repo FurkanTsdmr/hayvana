@@ -633,7 +633,7 @@
     }
 
     // ================================================================
-    // ⭐ TEKLIF VER + BÜTÇEYİ DÜŞÜR!
+    // TEKLIF VER
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -721,7 +721,7 @@
     }
 
     // ================================================================
-    // ⭐ PAS GEÇ + ZORUNLU ALIM (BÜTÇE DÜŞÜYOR!)
+    // PAS GEÇ
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -765,7 +765,7 @@
 
             var totalPlayers4 = Object.keys(data.players).length;
             
-            // ⭐ HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
+            // HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
             if (passCount4 >= totalPlayers4) {
                 var spinnerId4 = data.spinnerId;
                 var spinner4 = data.players[spinnerId4];
@@ -924,45 +924,12 @@
             if (!data || data.gameOver) return;
             
             console.log('🔍 checkGameOver çalisti!');
+            console.log('📊 Turn Phase:', data.turnPhase);
+            console.log('💰 En yuksek teklif:', data.highestBid);
+            console.log('👤 En yuksek teklif veren:', data.highestBidder);
             
             var players = data.players || {};
             var ids = Object.keys(players);
-            
-            // Oyun bitiş kontrolü
-            var allDone = true;
-            var allFull = true;
-            for (var i = 0; i < ids.length; i = i + 1) {
-                var id = ids[i];
-                var p = players[id];
-                if (!p.finished && p.budget >= 1) allDone = false;
-                if ((p.crew || []).length < 5) allFull = false;
-            }
-            
-            if (allDone || allFull) {
-                var maxP = -1;
-                var winId = null;
-                for (var j = 0; j < ids.length; j = j + 1) {
-                    var pId = ids[j];
-                    var p = players[pId];
-                    var total = 0;
-                    var crew = p.crew || [];
-                    for (var c = 0; c < crew.length; c = c + 1) {
-                        total = total + crew[c].power;
-                    }
-                    if (total > maxP) {
-                        maxP = total;
-                        winId = pId;
-                    }
-                }
-                roomRef.update({
-                    gameOver: true,
-                    winnerId: winId,
-                    turnPhase: 'finished'
-                });
-                var winnerName = winId ? (players[winId] ? players[winId].name : '?') : '?';
-                log('🏆 OYUN BITTI! Kazanan: ' + winnerName + ' (⚡' + maxP + ')');
-                return;
-            }
             
             // ============================================================
             // ⭐ NORMAL ALIM: En yüksek teklifi veren hayvanı ALIR!
@@ -974,9 +941,14 @@
                 
                 console.log('💰 En yuksek teklif:', highestBid, 'veren:', highestBidderId);
                 
+                // Eğer en yüksek teklif 0'dan büyükse ve bir kazanan varsa
                 if (highestBidderId && highestBid > 0) {
                     var winner2 = data.players[highestBidderId];
                     var animal2 = data.currentAnimal;
+                    
+                    console.log('🏅 Kazanan oyuncu:', winner2 ? winner2.name : 'BULUNAMADI');
+                    console.log('💰 Kazanan bütçesi:', winner2 ? winner2.budget : 'BULUNAMADI');
+                    console.log('💰 Teklif edilen miktar:', highestBid);
                     
                     if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
                         // ✅ BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
@@ -1030,6 +1002,42 @@
                         }
                     }
                 }
+            }
+            
+            // Oyun bitiş kontrolü (normal alım yapılmadıysa)
+            var allDone = true;
+            var allFull = true;
+            for (var i = 0; i < ids.length; i = i + 1) {
+                var id = ids[i];
+                var p = players[id];
+                if (!p.finished && p.budget >= 1) allDone = false;
+                if ((p.crew || []).length < 5) allFull = false;
+            }
+            
+            if (allDone || allFull) {
+                var maxP = -1;
+                var winId = null;
+                for (var j = 0; j < ids.length; j = j + 1) {
+                    var pId = ids[j];
+                    var p = players[pId];
+                    var total = 0;
+                    var crew = p.crew || [];
+                    for (var c = 0; c < crew.length; c = c + 1) {
+                        total = total + crew[c].power;
+                    }
+                    if (total > maxP) {
+                        maxP = total;
+                        winId = pId;
+                    }
+                }
+                roomRef.update({
+                    gameOver: true,
+                    winnerId: winId,
+                    turnPhase: 'finished'
+                });
+                var winnerName = winId ? (players[winId] ? players[winId].name : '?') : '?';
+                log('🏆 OYUN BITTI! Kazanan: ' + winnerName + ' (⚡' + maxP + ')');
+                return;
             }
         });
     }
