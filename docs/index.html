@@ -633,7 +633,7 @@
     }
 
     // ================================================================
-    // TEKLIF VER
+    // ⭐ TEKLIF VER (BÜTÇEYİ KORU, SADECE TEKLİFİ ARTTIR)
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -721,7 +721,7 @@
     }
 
     // ================================================================
-    // ⭐ PAS GEÇ (DÜZELTİLDİ - SADECE PAS MEKANİĞİ)
+    // ⭐ PAS GEÇ + ALIM (BÜTÇE DÜŞÜYOR!)
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -766,7 +766,7 @@
 
             var totalPlayers4 = Object.keys(data.players).length;
             
-            // ⭐ HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
+            // ⭐ HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM! (1$)
             if (passCount4 >= totalPlayers4) {
                 var spinnerId4 = data.spinnerId;
                 var spinner4 = data.players[spinnerId4];
@@ -835,6 +835,57 @@
                     if (nextId5) updates4.currentPlayerId = nextId5;
                     
                     roomRef.update(updates4);
+                    setTimeout(function() { checkGameOver(roomRef); }, 300);
+                    return;
+                }
+            }
+
+            // ⭐ NORMAL ALIM: En yüksek teklif veren varsa O ALIR! (teklif ettiği miktar)
+            var highestBidderId = data.highestBidder;
+            var highestBid = data.highestBid || 0;
+            
+            if (highestBidderId && highestBid > 0) {
+                var winner2 = data.players[highestBidderId];
+                var animal2 = data.currentAnimal;
+                
+                if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
+                    var oldBudget2 = winner2.budget;
+                    winner2.budget = winner2.budget - highestBid;
+                    winner2.crew = winner2.crew || [];
+                    var newAnimal2 = {
+                        name: animal2.name,
+                        emoji: animal2.emoji,
+                        power: animal2.power
+                    };
+                    winner2.crew.push(newAnimal2);
+                    winner2.totalPower = (winner2.totalPower || 0) + animal2.power;
+                    if (winner2.crew.length >= 5) winner2.finished = true;
+                    
+                    updates4['players/' + highestBidderId] = winner2;
+                    updates4.currentAnimal = null;
+                    updates4.turnPhase = 'finished';
+                    updates4.passCount = 0;
+                    updates4.passedPlayers = [];
+                    updates4.highestBid = 0;
+                    updates4.highestBidder = null;
+                    
+                    var ids8 = Object.keys(data.players);
+                    var idx8 = ids8.indexOf(highestBidderId);
+                    var nextId8 = null;
+                    for (var k8 = 1; k8 <= ids8.length; k8 = k8 + 1) {
+                        var ni8 = ids8[(idx8 + k8) % ids8.length];
+                        if (!data.players[ni8] || !data.players[ni8].finished) {
+                            nextId8 = ni8;
+                            break;
+                        }
+                    }
+                    if (nextId8) updates4.currentPlayerId = nextId8;
+                    
+                    roomRef.update(updates4);
+                    log('🏅 ' + winner2.name + ' ' + animal2.emoji + ' ' + animal2.name + ' ' + highestBid + '$ odeyerek kazandi!');
+                    log('💰 Eski bütçe: ' + oldBudget2 + ' -> Yeni bütçe: ' + winner2.budget);
+                    log('📦 ' + winner2.name + ' kadrosu: ' + winner2.crew.length + '/5');
+                    
                     setTimeout(function() { checkGameOver(roomRef); }, 300);
                     return;
                 }
