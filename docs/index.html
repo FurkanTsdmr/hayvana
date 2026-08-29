@@ -721,7 +721,7 @@
     }
 
     // ================================================================
-    // PAS GEÇ
+    // ⭐ PAS GEÇ + ZORUNLU ALIM (BÜTÇE DÜŞÜYOR!)
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -765,12 +765,15 @@
 
             var totalPlayers4 = Object.keys(data.players).length;
             
+            // ⭐ HERKES PAS GEÇTİ Mİ? ZORUNLU ALIM!
             if (passCount4 >= totalPlayers4) {
                 var spinnerId4 = data.spinnerId;
                 var spinner4 = data.players[spinnerId4];
                 var animal4 = data.currentAnimal;
                 
                 if (spinner4 && spinner4.budget >= 1 && !spinner4.finished) {
+                    // ✅ BÜTÇEDEN 1$ DÜŞÜYOR (ZORUNLU ALIM)
+                    var oldBudget = spinner4.budget;
                     spinner4.budget = spinner4.budget - 1;
                     spinner4.crew = spinner4.crew || [];
                     var newAnimal = {
@@ -789,6 +792,7 @@
                     updates4.passedPlayers = [];
                     
                     log('🚨 ZORUNLU ALIM! ' + spinner4.name + ' ' + animal4.emoji + ' ' + animal4.name + ' 1$ odeyerek aldi!');
+                    log('💰 Eski bütçe: ' + oldBudget + ' -> Yeni bütçe: ' + spinner4.budget);
                     log('📦 ' + spinner4.name + ' kadrosu: ' + spinner4.crew.length + '/5');
                     
                     var ids4 = Object.keys(data.players);
@@ -832,6 +836,7 @@
                 }
             }
 
+            // Sırayı bir sonraki oyuncuya ver
             var ids6 = Object.keys(data.players);
             var idx6 = ids6.indexOf(myId);
             var nextId6 = null;
@@ -853,11 +858,13 @@
                 updates4.currentPlayerId = nextId6;
                 log('⏳ Sira ' + data.players[nextId6].name + '\'de.');
             } else {
+                // Hiç aktif oyuncu kalmadıysa spinner zorunlu alır
                 var spinnerId6 = data.spinnerId;
                 var spinner6 = data.players[spinnerId6];
                 var animal6 = data.currentAnimal;
                 
                 if (spinner6 && spinner6.budget >= 1 && !spinner6.finished) {
+                    var oldBudget2 = spinner6.budget;
                     spinner6.budget = spinner6.budget - 1;
                     spinner6.crew = spinner6.crew || [];
                     var newAnimal6 = {
@@ -876,6 +883,7 @@
                     updates4.passedPlayers = [];
                     
                     log('🚨 ZORUNLU ALIM! ' + spinner6.name + ' ' + animal6.emoji + ' ' + animal6.name + ' 1$ odeyerek aldi!');
+                    log('💰 Eski bütçe: ' + oldBudget2 + ' -> Yeni bütçe: ' + spinner6.budget);
                     
                     var ids7 = Object.keys(data.players);
                     var idx7 = ids7.indexOf(spinnerId6);
@@ -909,15 +917,14 @@
     }
 
     // ================================================================
-    // ⭐ OYUN BİTTİ Mİ KONTROL ET + BÜTÇEYİ DÜŞÜR!
+    // ⭐ OYUN BİTTİ Mİ KONTROL ET + NORMAL ALIM (BÜTÇE DÜŞÜYOR!)
     // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
             var data = snap.val();
             if (!data || data.gameOver) return;
             
-            console.log('🔍 checkGameOver çalıştı!');
-            console.log('📊 Mevcut veri:', data);
+            console.log('🔍 checkGameOver çalisti!');
             
             var players = data.players || {};
             var ids = Object.keys(players);
@@ -966,14 +973,11 @@
                 var highestBidderId = data.highestBidder;
                 var highestBid = data.highestBid || 0;
                 
-                console.log('💰 En yüksek teklif:', highestBid, 'veren:', highestBidderId);
+                console.log('💰 En yuksek teklif:', highestBid, 'veren:', highestBidderId);
                 
                 if (highestBidderId && highestBid > 0) {
                     var winner2 = data.players[highestBidderId];
                     var animal2 = data.currentAnimal;
-                    
-                    console.log('🏅 Kazanan oyuncu:', winner2 ? winner2.name : 'BULUNAMADI');
-                    console.log('💰 Kazanan bütçesi:', winner2 ? winner2.budget : 'BULUNAMADI');
                     
                     if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
                         // ✅ BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
@@ -1021,7 +1025,7 @@
                         setTimeout(function() { checkGameOver(roomRef); }, 300);
                         return;
                     } else {
-                        console.log('⚠️ Kazanan bütçesi yetersiz veya oyuncu bulunamadı!');
+                        console.log('⚠️ Kazanan butcesi yetersiz veya oyuncu bulunamadi!');
                         if (winner2) {
                             console.log('💰 Bütçe:', winner2.budget, 'Teklif:', highestBid);
                         }
