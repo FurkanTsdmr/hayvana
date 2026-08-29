@@ -529,7 +529,7 @@
     }
 
     // ================================================================
-    // ⭐ OYUN BAŞLAT - BÜTÇEYİ KORU!
+    // OYUN BASLAT
     // ================================================================
     function startGame(count) {
         if (!isHost) {
@@ -552,11 +552,11 @@
             for (var i = 0; i < ids.length; i = i + 1) {
                 var id = ids[i];
                 updates['players/' + id + '/name'] = names[i % names.length] + (i + 1);
-                // ⭐ BÜTÇEYİ KORU! Sadece eğer budget 0 veya tanımsızsa 15 yap
-                if (!players[id] || players[id].budget === undefined) {
-                    updates['players/' + id + '/budget'] = 15;
-                } else {
+                // BÜTÇEYİ KORU! Eğer daha önce bütçe varsa onu kullan
+                if (players[id] && players[id].budget !== undefined && players[id].budget !== null) {
                     updates['players/' + id + '/budget'] = players[id].budget;
+                } else {
+                    updates['players/' + id + '/budget'] = 15;
                 }
                 updates['players/' + id + '/crew'] = [];
                 updates['players/' + id + '/totalPower'] = 0;
@@ -580,6 +580,9 @@
         });
     }
 
+    // ================================================================
+    // CARKI CEVIR
+    // ================================================================
     function spinAnimal() {
         if (!gameStarted) {
             log('⚠️ Oyun baslamadi!');
@@ -631,7 +634,7 @@
     }
 
     // ================================================================
-    // ⭐ TEKLİF VER - HIGHEST BİD DOĞRU ARTIYOR!
+    // TEKLIF VER
     // ================================================================
     function placeBid() {
         if (!gameStarted) {
@@ -718,6 +721,9 @@
         });
     }
 
+    // ================================================================
+    // PAS GEÇ + ZORUNLU ALIM
+    // ================================================================
     function handlePass() {
         if (!gameStarted) {
             log('⚠️ Oyun baslamadi!');
@@ -904,7 +910,7 @@
     }
 
     // ================================================================
-    // ⭐ OYUN BİTTİ Mİ KONTROL ET + BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
+    // ⭐ OYUN BİTTİ Mİ KONTROL ET + BÜTÇEDEN DOĞRU MİKTAR DÜŞER!
     // ================================================================
     function checkGameOver(roomRef) {
         roomRef.once('value', function(snap) {
@@ -964,7 +970,8 @@
                     
                     if (winner2 && !winner2.finished && winner2.budget >= highestBid) {
                         // ✅ BÜTÇEDEN TEKLİF EDİLEN MİKTAR DÜŞER!
-                        winner2.budget = winner2.budget - highestBid;
+                        var newBudget = winner2.budget - highestBid;
+                        winner2.budget = newBudget;
                         winner2.crew = winner2.crew || [];
                         var newAnimal2 = {
                             name: animal2.name,
@@ -999,6 +1006,7 @@
                         roomRef.update(updates8);
                         log('🏅 ' + winner2.name + ' ' + animal2.emoji + ' ' + animal2.name + ' ' + highestBid + '$ odeyerek kazandi!');
                         log('📦 ' + winner2.name + ' kadrosu: ' + winner2.crew.length + '/5');
+                        log('💰 ' + winner2.name + ' kalan butce: ' + winner2.budget + '$');
                         
                         setTimeout(function() { checkGameOver(roomRef); }, 300);
                         return;
