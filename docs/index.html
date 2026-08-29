@@ -721,7 +721,7 @@
     }
 
     // ================================================================
-    // ⭐ PAS GEÇ (DÜZELTİLDİ!)
+    // ⭐ PAS GEÇ (DÜZELTİLDİ - SADECE PAS MEKANİĞİ)
     // ================================================================
     function handlePass() {
         if (!gameStarted) {
@@ -759,7 +759,7 @@
             if (data.highestBidder === myId) {
                 updates4.highestBid = 0;
                 updates4.highestBidder = null;
-                log(player.name + ' en yuksek tekliften vazgecti! Teklifler sifirlandi.');
+                log('🔄 ' + player.name + ' en yuksek tekliften vazgecti! Teklifler sifirlandi.');
             }
             
             log(player.name + ' ⛔ pas gecti.');
@@ -840,30 +840,31 @@
                 }
             }
 
-            // ⭐ BİR SONRAKİ OYUNCUYA SIRAYI VER
+            // ⭐ SIRAYI BİR SONRAKİ AKTİF OYUNCUYA VER
             var ids6 = Object.keys(data.players);
             var idx6 = ids6.indexOf(myId);
             var nextId6 = null;
             
-            // Pas geçmeyen ve bitmemiş oyuncular arasından sıradakini bul
-            for (var k6 = 1; k6 <= ids6.length; k6 = k6 + 1) {
-                var ni6 = ids6[(idx6 + k6) % ids6.length];
-                if (!data.players[ni6] || (!data.players[ni6].finished && !arrayIncludes(passedPlayers4, ni6))) {
-                    nextId6 = ni6;
-                    break;
-                }
-            }
-            
-            // Eğer en yüksek teklif veren biri varsa ve pas geçmediyse, sırayı ona ver
+            // Önce en yüksek teklifi veren kontrol et (pas geçmediyse)
             if (data.highestBidder && data.players[data.highestBidder] && 
                 !data.players[data.highestBidder].finished && 
                 !arrayIncludes(passedPlayers4, data.highestBidder)) {
                 nextId6 = data.highestBidder;
+            } else {
+                // Pas geçmeyen ve bitmemiş oyuncular arasından sıradakini bul
+                for (var k6 = 1; k6 <= ids6.length; k6 = k6 + 1) {
+                    var ni6 = ids6[(idx6 + k6) % ids6.length];
+                    if (!data.players[ni6] || (!data.players[ni6].finished && !arrayIncludes(passedPlayers4, ni6))) {
+                        nextId6 = ni6;
+                        break;
+                    }
+                }
             }
 
             if (nextId6) {
                 updates4.currentPlayerId = nextId6;
                 log('⏳ Sira ' + data.players[nextId6].name + '\'de.');
+                roomRef.update(updates4);
             } else {
                 // ⭐ HİÇ AKTİF OYUNCU KALMADIYSA SPINNER ZORUNLU ALIR
                 var spinnerId6 = data.spinnerId;
@@ -922,8 +923,6 @@
                     return;
                 }
             }
-            
-            roomRef.update(updates4);
         });
     }
 
